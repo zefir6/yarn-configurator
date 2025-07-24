@@ -50,6 +50,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = queueFormSchema.parse(req.body);
       const queue = await storage.createQueue(validatedData);
+      
+      // Regenerate and save XML to keep it in sync
+      try {
+        const allQueues = await storage.getQueues();
+        const xmlContent = generateXMLFromQueues(allQueues);
+        
+        // Update config file with regenerated XML
+        const configFile = await storage.getConfigFile();
+        if (configFile) {
+          const updatedConfig = await storage.saveConfigFile({
+            filePath: configFile.filePath,
+            content: xmlContent,
+            isValid: true,
+            lastModified: new Date().toISOString(),
+            validationErrors: null,
+          });
+          
+          // Write to disk
+          await storage.writeConfigToDisk(configFile.filePath, xmlContent);
+          console.log(`Updated XML file with new queue: ${queue.name}`);
+        }
+      } catch (syncError) {
+        console.warn("Failed to sync XML after queue creation:", syncError);
+      }
+      
       res.status(201).json(queue);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -68,6 +93,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!queue) {
         return res.status(404).json({ message: "Queue not found" });
       }
+      
+      // Regenerate and save XML to keep it in sync
+      try {
+        const allQueues = await storage.getQueues();
+        const xmlContent = generateXMLFromQueues(allQueues);
+        
+        // Update config file with regenerated XML
+        const configFile = await storage.getConfigFile();
+        if (configFile) {
+          await storage.saveConfigFile({
+            filePath: configFile.filePath,
+            content: xmlContent,
+            isValid: true,
+            lastModified: new Date().toISOString(),
+            validationErrors: null,
+          });
+          
+          // Write to disk
+          await storage.writeConfigToDisk(configFile.filePath, xmlContent);
+          console.log(`Updated XML file after queue update: ${queue.name}`);
+        }
+      } catch (syncError) {
+        console.warn("Failed to sync XML after queue update:", syncError);
+      }
+      
       res.json(queue);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -85,6 +135,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ message: "Queue not found" });
       }
+      
+      // Regenerate and save XML to keep it in sync
+      try {
+        const allQueues = await storage.getQueues();
+        const xmlContent = generateXMLFromQueues(allQueues);
+        
+        // Update config file with regenerated XML
+        const configFile = await storage.getConfigFile();
+        if (configFile) {
+          await storage.saveConfigFile({
+            filePath: configFile.filePath,
+            content: xmlContent,
+            isValid: true,
+            lastModified: new Date().toISOString(),
+            validationErrors: null,
+          });
+          
+          // Write to disk
+          await storage.writeConfigToDisk(configFile.filePath, xmlContent);
+          console.log(`Updated XML file after queue deletion`);
+        }
+      } catch (syncError) {
+        console.warn("Failed to sync XML after queue deletion:", syncError);
+      }
+      
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete queue" });

@@ -222,8 +222,18 @@ export class MemStorage implements IStorage {
     this.queues.clear();
     this.currentQueueId = 1;
 
-    // Add queues from XML
+    // Ensure we only have one root queue
+    const uniqueQueues = new Map();
+    
     queues.forEach(queue => {
+      const key = queue.name;
+      if (!uniqueQueues.has(key)) {
+        uniqueQueues.set(key, queue);
+      }
+    });
+
+    // Add queues from XML (deduplicated)
+    Array.from(uniqueQueues.values()).forEach(queue => {
       const id = this.currentQueueId++;
       this.queues.set(id, { 
         ...queue, 
@@ -243,7 +253,7 @@ export class MemStorage implements IStorage {
       });
     });
 
-    console.log(`Synchronized ${queues.length} queues to memory storage`);
+    console.log(`Synchronized ${uniqueQueues.size} unique queues to memory storage`);
   }
 
   getDefaultXMLContent(): string {
@@ -590,7 +600,17 @@ export class SqliteStorage implements IStorage {
     // Clear existing queues
     this.sqlite.prepare('DELETE FROM queues').run();
 
-    // Add queues from XML
+    // Ensure we only have one root queue
+    const uniqueQueues = new Map();
+    
+    queues.forEach(queue => {
+      const key = queue.name;
+      if (!uniqueQueues.has(key)) {
+        uniqueQueues.set(key, queue);
+      }
+    });
+
+    // Add queues from XML (deduplicated)
     const insertQueue = this.sqlite.prepare(`
       INSERT INTO queues (name, parent, weight, scheduling_policy, min_memory, min_vcores, 
                          max_memory, max_vcores, max_running_apps, max_am_share, 
@@ -598,7 +618,7 @@ export class SqliteStorage implements IStorage {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    queues.forEach(queue => {
+    Array.from(uniqueQueues.values()).forEach(queue => {
       insertQueue.run(
         queue.name,
         queue.parent,
@@ -616,7 +636,7 @@ export class SqliteStorage implements IStorage {
       );
     });
 
-    console.log(`Synchronized ${queues.length} queues to SQLite database`);
+    console.log(`Synchronized ${uniqueQueues.size} unique queues to SQLite database`);
   }
 
   getDefaultXMLContent(): string {

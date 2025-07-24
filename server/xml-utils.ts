@@ -15,13 +15,20 @@ export async function parseQueuesFromXML(content: string): Promise<any[]> {
         return;
       }
 
-      // Add root queue
-      queues.push({
-        name: "root",
-        parent: null,
-        weight: 1.0,
-        schedulingPolicy: "fair"
-      });
+      // Add root queue (only if we have actual queues to parse)
+      let hasQueues = false;
+      if (result.allocations.queue) {
+        hasQueues = true;
+      }
+      
+      if (hasQueues) {
+        queues.push({
+          name: "root",
+          parent: null,
+          weight: 1.0,
+          schedulingPolicy: "fair"
+        });
+      }
 
       // Parse queues from XML
       const processQueue = (queueXml: any, parentName: string = "root") => {
