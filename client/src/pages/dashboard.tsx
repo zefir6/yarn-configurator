@@ -9,6 +9,7 @@ type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [editingQueueId, setEditingQueueId] = useState<number | null>(null);
 
   const getTabTitle = (tab: TabType): string => {
     const titles = {
@@ -21,12 +22,31 @@ export default function Dashboard() {
     return titles[tab];
   };
 
+  const handleEditQueue = (queueId: number) => {
+    setEditingQueueId(queueId);
+    setActiveTab("queues");
+  };
+
+  const handleSwitchToQueues = () => {
+    setActiveTab("queues");
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "overview":
-        return <Overview />;
+        return (
+          <Overview 
+            onEditQueue={handleEditQueue}
+            onSwitchToQueues={handleSwitchToQueues}
+          />
+        );
       case "queues":
-        return <QueueForm />;
+        return (
+          <QueueForm 
+            editingQueueId={editingQueueId}
+            onClearEdit={() => setEditingQueueId(null)}
+          />
+        );
       case "xml-editor":
         return <XmlEditor />;
       default:

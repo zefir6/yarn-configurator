@@ -15,9 +15,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Plus, Save, CheckCircle, X } from "lucide-react";
 
-export default function QueueForm() {
-  const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+interface QueueFormProps {
+  editingQueueId?: number | null;
+  onClearEdit?: () => void;
+}
+
+export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProps = {}) {
+  const [selectedQueueId, setSelectedQueueId] = useState<number | null>(editingQueueId || null);
+  const [isEditing, setIsEditing] = useState(!!editingQueueId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -97,6 +102,14 @@ export default function QueueForm() {
     },
   });
 
+  // Update editing state when prop changes
+  useEffect(() => {
+    if (editingQueueId && editingQueueId !== selectedQueueId) {
+      setSelectedQueueId(editingQueueId);
+      setIsEditing(true);
+    }
+  }, [editingQueueId, selectedQueueId]);
+
   // Update form when selected queue changes
   useEffect(() => {
     if (selectedQueue) {
@@ -133,6 +146,9 @@ export default function QueueForm() {
     setIsEditing(false);
     setSelectedQueueId(null);
     form.reset();
+    if (onClearEdit) {
+      onClearEdit();
+    }
   };
 
   const onSubmit = (data: QueueFormData) => {

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Layers, 
   MemoryStick, 
@@ -11,11 +12,20 @@ import {
   FolderOpen, 
   Folder, 
   Edit, 
-  Plus 
+  Plus,
+  Eye
 } from "lucide-react";
 import type { Queue } from "@shared/schema";
 
-export default function Overview() {
+interface OverviewProps {
+  onEditQueue?: (queueId: number) => void;
+  onSwitchToQueues?: () => void;
+}
+
+export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProps) {
+  const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
   const { data: queues = [], isLoading } = useQuery<Queue[]>({
     queryKey: ["/api/queues"],
   });
@@ -41,6 +51,20 @@ export default function Overview() {
 
   const getRootQueues = () => {
     return queues.filter(q => q.parent === "root" && q.name !== "root");
+  };
+
+  const handleViewQueue = (queue: Queue) => {
+    setSelectedQueue(queue);
+    setIsDetailsOpen(true);
+  };
+
+  const handleEditQueue = (queue: Queue) => {
+    if (onEditQueue) {
+      onEditQueue(queue.id);
+    }
+    if (onSwitchToQueues) {
+      onSwitchToQueues();
+    }
   };
 
   if (isLoading) {
@@ -86,7 +110,7 @@ export default function Overview() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-carbon-gray-50">Total Memory</p>
                 <p className="text-2xl font-semibold text-carbon-gray-70">
-                  {formatMemory(stats.totalMemory)}
+                  {stats.totalMemory > 0 ? formatMemory(stats.totalMemory) : "Unlimited"}
                 </p>
               </div>
             </div>
@@ -101,7 +125,9 @@ export default function Overview() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-carbon-gray-50">Total vCores</p>
-                <p className="text-2xl font-semibold text-carbon-gray-70">{stats.totalVCores}</p>
+                <p className="text-2xl font-semibold text-carbon-gray-70">
+                  {stats.totalVCores > 0 ? stats.totalVCores : "Unlimited"}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -111,16 +137,66 @@ export default function Overview() {
           <CardContent className="pt-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Scale className="h-8 w-8 text-purple-600" />
+                <Scale className="h-8 w-8 text-carbon-purple" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-carbon-gray-50">Default Policy</p>
-                <p className="text-lg font-semibold text-carbon-gray-70">{stats.defaultPolicy}</p>
+                <p className="text-2xl font-semibold text-carbon-gray-70">{stats.defaultPolicy}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Configuration Status */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="text-lg font-medium text-carbon-gray-70">Configuration Status</CardTitle>
+          <p className="text-sm text-carbon-gray-50 mt-1">
+            Current fair-scheduler.xml configuration status
+          </p>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium text-carbon-gray-70 mb-2">File Location</h4>
+              <p className="text-sm text-carbon-gray-50">
+                {config?.filePath || "/etc/hadoop/conf/fair-scheduler.xml"}
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium text-carbon-gray-70 mb-2">Last Modified</h4>
+              <p className="text-sm text-carbon-gray-50">
+                {config?.lastModified ? new Date(config.lastModified).toLocaleString() : "Unknown"}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Activity */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="text-lg font-medium text-carbon-gray-70">Recent Activity</CardTitle>
+          <p className="text-sm text-carbon-gray-50 mt-1">
+            Latest configuration changes and updates
+          </p>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-carbon-gray-70">Configuration loaded from disk</span>
+              <span className="text-xs text-carbon-gray-50">
+                {config?.lastModified ? new Date(config.lastModified).toLocaleString() : "Recently"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-carbon-gray-70">Queue hierarchy validated</span>
+              <span className="text-xs text-carbon-gray-50">Recently</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Queue Hierarchy Visualization */}
       <Card className="border border-gray-200 shadow-sm">
@@ -162,55 +238,144 @@ export default function Overview() {
                       </Badge>
                     )}
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Edit className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleViewQueue(queue)}
+                      title="View queue details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleEditQueue(queue)}
+                      title="Edit queue configuration"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <Button variant="outline" className="border-carbon-blue text-carbon-blue hover:bg-blue-50">
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Queue
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Recent Activity */}
-      <Card className="border border-gray-200 shadow-sm">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="text-lg font-medium text-carbon-gray-70">
-            Recent Configuration Changes
-          </CardTitle>
-          <p className="text-sm text-carbon-gray-50 mt-1">
-            Track modifications to your scheduler configuration
-          </p>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {config?.lastModified ? (
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0 w-2 h-2 bg-carbon-success rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-carbon-gray-70">
-                    Configuration file was last modified
-                  </p>
-                  <p className="text-xs text-carbon-gray-50 mt-1">
-                    {new Date(config.lastModified).toLocaleString()}
-                  </p>
+      {/* Queue Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Folder className="w-5 h-5 text-carbon-blue" />
+              <span>Queue Details: {selectedQueue?.name}</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedQueue && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-carbon-gray-50">Queue Name</label>
+                  <p className="text-base text-carbon-gray-70">{selectedQueue.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-carbon-gray-50">Parent Queue</label>
+                  <p className="text-base text-carbon-gray-70">{selectedQueue.parent || "root"}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-carbon-gray-50">Weight</label>
+                  <p className="text-base text-carbon-gray-70">{selectedQueue.weight || "Not set"}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-carbon-gray-50">Scheduling Policy</label>
+                  <p className="text-base text-carbon-gray-70">{selectedQueue.schedulingPolicy || "fair"}</p>
                 </div>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-carbon-gray-50">No recent activity</p>
+
+              {/* Resource Limits */}
+              <div>
+                <h4 className="text-sm font-medium text-carbon-gray-70 mb-3">Resource Limits</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-carbon-gray-50">Min Memory</label>
+                    <p className="text-base text-carbon-gray-70">
+                      {selectedQueue.minMemory ? formatMemory(selectedQueue.minMemory) : "Not set"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-carbon-gray-50">Min vCores</label>
+                    <p className="text-base text-carbon-gray-70">{selectedQueue.minVcores || "Not set"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-carbon-gray-50">Max Memory</label>
+                    <p className="text-base text-carbon-gray-70">
+                      {selectedQueue.maxMemory ? formatMemory(selectedQueue.maxMemory) : "Not set"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-carbon-gray-50">Max vCores</label>
+                    <p className="text-base text-carbon-gray-70">{selectedQueue.maxVcores || "Not set"}</p>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+
+              {/* Application Limits */}
+              <div>
+                <h4 className="text-sm font-medium text-carbon-gray-70 mb-3">Application Limits</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-carbon-gray-50">Max Running Apps</label>
+                    <p className="text-base text-carbon-gray-70">{selectedQueue.maxRunningApps || "Not set"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-carbon-gray-50">Max AM Share</label>
+                    <p className="text-base text-carbon-gray-70">{selectedQueue.maxAMShare || "Not set"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Preemption Settings */}
+              <div>
+                <h4 className="text-sm font-medium text-carbon-gray-70 mb-3">Preemption Settings</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-carbon-gray-50">Allow Preemption From</label>
+                    <p className="text-base text-carbon-gray-70">
+                      {selectedQueue.allowPreemptionFrom ? "Yes" : "No"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-carbon-gray-50">Allow Preemption To</label>
+                    <p className="text-base text-carbon-gray-70">
+                      {selectedQueue.allowPreemptionTo ? "Yes" : "No"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setIsDetailsOpen(false);
+                    handleEditQueue(selectedQueue);
+                  }}
+                  className="bg-carbon-blue hover:bg-blue-700"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Queue
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
