@@ -99,7 +99,22 @@ export class MemStorage implements IStorage {
 
   async createQueue(insertQueue: InsertQueue): Promise<Queue> {
     const id = this.currentQueueId++;
-    const queue: Queue = { ...insertQueue, id };
+    const queue: Queue = { 
+      ...insertQueue, 
+      id,
+      parent: insertQueue.parent ?? null,
+      weight: insertQueue.weight ?? null,
+      schedulingPolicy: insertQueue.schedulingPolicy ?? null,
+      minMemory: insertQueue.minMemory ?? null,
+      minVcores: insertQueue.minVcores ?? null,
+      maxMemory: insertQueue.maxMemory ?? null,
+      maxVcores: insertQueue.maxVcores ?? null,
+      maxRunningApps: insertQueue.maxRunningApps ?? null,
+      maxAMShare: insertQueue.maxAMShare ?? null,
+      allowPreemptionFrom: insertQueue.allowPreemptionFrom ?? null,
+      allowPreemptionTo: insertQueue.allowPreemptionTo ?? null,
+      reservation: insertQueue.reservation ?? null
+    };
     this.queues.set(id, queue);
     return queue;
   }
@@ -124,7 +139,13 @@ export class MemStorage implements IStorage {
 
   async saveConfigFile(config: InsertConfigFile): Promise<ConfigFile> {
     const id = this.currentConfigId++;
-    const configFile: ConfigFile = { ...config, id };
+    const configFile: ConfigFile = { 
+      ...config, 
+      id,
+      isValid: config.isValid ?? null,
+      lastModified: config.lastModified ?? null,
+      validationErrors: config.validationErrors ?? null
+    };
     this.configFiles.set(id, configFile);
     return configFile;
   }

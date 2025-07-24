@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application for managing YARN Fair Scheduler configurations. The application provides a visual interface for creating, editing, and managing Hadoop YARN queue configurations, with the ability to generate and validate XML configuration files.
+This is a full-stack web application for managing YARN Fair Scheduler configurations. The application provides a visual interface for creating, editing, and managing Hadoop YARN queue configurations, with the ability to generate and validate XML configuration files. The application is ready for local deployment with comprehensive documentation and instructions.
 
 ## User Preferences
 
@@ -108,4 +108,4 @@ The application follows a monorepo structure with clear separation of concerns:
 - Real-time form validation and error handling
 - Responsive design with mobile support
 
-The application is designed to be deployed on Replit with the potential to connect to a PostgreSQL database, though it currently uses an in-memory storage implementation for development purposes.
+The application is designed to be deployed locally with comprehensive deployment instructions provided in README.md. It supports both in-memory storage for development and PostgreSQL for production use. The application includes full documentation for local deployment, Docker deployment, system service setup, and Hadoop integration.

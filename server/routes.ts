@@ -1,15 +1,15 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { queueFormSchema, insertConfigFileSchema } from "@shared/schema";
 import { z } from "zod";
-import multer from "multer";
+import multer, { FileFilterCallback } from "multer";
 import * as path from "path";
 import { parseString, Builder } from "xml2js";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  fileFilter: (req, file, cb) => {
+  fileFilter: (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
     if (file.mimetype === 'text/xml' || file.mimetype === 'application/xml' || file.originalname.endsWith('.xml')) {
       cb(null, true);
     } else {
@@ -223,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 async function validateXML(content: string): Promise<{ isValid: boolean; errors?: string[] }> {
   return new Promise((resolve) => {
-    parseString(content, { explicitArray: false }, (err, result) => {
+    parseString(content, { explicitArray: false }, (err: any, result: any) => {
       if (err) {
         resolve({ isValid: false, errors: [err.message] });
         return;
