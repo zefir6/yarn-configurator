@@ -438,6 +438,32 @@ docker-compose down
 - **`.dockerignore`** - Optimized build context
 - **`.env.example`** - Environment variable template
 
+## File System Integration
+
+The application automatically integrates with your Hadoop file system:
+
+### Automatic Discovery
+- On startup, attempts to read existing `fair-scheduler.xml` from configured path
+- Falls back gracefully to default configuration if file doesn't exist
+- Preserves existing configurations during application restarts
+
+### Read-Write Operations
+```bash
+# Application automatically reads from:
+/etc/hadoop/conf/fair-scheduler.xml  # Default location
+
+# Or from custom path via environment variable:
+FAIR_SCHEDULER_XML_PATH=/custom/path/fair-scheduler.xml
+
+# All changes made through the web interface are immediately written to disk
+# ensuring Hadoop picks up configuration changes
+```
+
+### Configuration Validation
+- All XML content is validated before writing to disk
+- Invalid configurations are rejected to prevent Hadoop errors
+- Validation includes syntax checking and basic schema validation
+
 #### Option 3: System Service Deployment
 
 1. **Create SystemD Service** (`/etc/systemd/system/yarn-scheduler.service`):

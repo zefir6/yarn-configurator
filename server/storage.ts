@@ -18,6 +18,7 @@ export interface IStorage {
   saveConfigFile(config: InsertConfigFile): Promise<ConfigFile>;
   readConfigFromDisk(filePath: string): Promise<string>;
   writeConfigToDisk(filePath: string, content: string): Promise<void>;
+  getDefaultXMLContent(): string;
 }
 
 export class MemStorage implements IStorage {
@@ -39,6 +40,9 @@ export class MemStorage implements IStorage {
     
     // Initialize with default queues
     this.initializeDefaultQueues();
+    
+    // Try to load existing config from disk
+    this.loadConfigFromDisk();
   }
 
   private initializeDefaultQueues() {
@@ -171,11 +175,13 @@ export class MemStorage implements IStorage {
 
   async readConfigFromDisk(filePath: string): Promise<string> {
     try {
+      console.log(`Reading config file from: ${filePath}`);
       const content = await fs.readFile(filePath, 'utf-8');
+      console.log(`Successfully read ${content.length} characters from ${filePath}`);
       return content;
     } catch (error) {
-      // If file doesn't exist, return default XML structure
-      return this.getDefaultXMLContent();
+      console.error(`Failed to read config file from ${filePath}:`, error);
+      throw error; // Let the caller handle the error
     }
   }
 
@@ -192,7 +198,28 @@ export class MemStorage implements IStorage {
     }
   }
 
-  private getDefaultXMLContent(): string {
+  private async loadConfigFromDisk(): Promise<void> {
+    try {
+      console.log(`Attempting to load existing config from: ${this.defaultConfigPath}`);
+      const content = await this.readConfigFromDisk(this.defaultConfigPath);
+      
+      // Save to memory storage
+      const configFile: ConfigFile = {
+        id: this.currentConfigId++,
+        filePath: this.defaultConfigPath,
+        content,
+        isValid: true,
+        lastModified: new Date().toISOString(),
+        validationErrors: null
+      };
+      this.configFiles.set(configFile.id, configFile);
+      console.log(`Successfully loaded existing config from: ${this.defaultConfigPath}`);
+    } catch (error) {
+      console.log(`No existing config found at ${this.defaultConfigPath}, will use defaults`);
+    }
+  }
+
+  getDefaultXMLContent(): string {
     return `<?xml version="1.0"?>
 <allocations>
   <queue name="production">
@@ -255,6 +282,9 @@ export class SqliteStorage implements IStorage {
         : '/etc/hadoop/conf/fair-scheduler.xml');
     
     this.initializeDatabase();
+    
+    // Try to load existing config from disk
+    this.loadConfigFromDisk();
   }
 
   private initializeDatabase() {
@@ -477,10 +507,13 @@ export class SqliteStorage implements IStorage {
 
   async readConfigFromDisk(filePath: string): Promise<string> {
     try {
+      console.log(`Reading config file from: ${filePath}`);
       const content = await fs.readFile(filePath, 'utf-8');
+      console.log(`Successfully read ${content.length} characters from ${filePath}`);
       return content;
     } catch (error) {
-      return this.getDefaultXMLContent();
+      console.error(`Failed to read config file from ${filePath}:`, error);
+      throw error; // Let the caller handle the error
     }
   }
 
@@ -494,7 +527,32 @@ export class SqliteStorage implements IStorage {
     }
   }
 
-  private getDefaultXMLContent(): string {
+  private async loadConfigFromDisk(): Promise<void> {
+    try {
+      console.log(`Attempting to load existing config from: ${this.defaultConfigPath}`);
+      const content = await this.readConfigFromDisk(this.defaultConfigPath);
+      
+      // Save to SQLite database
+      const insert = this.sqlite.prepare(`
+        INSERT INTO config_files (file_path, content, is_valid, last_modified, validation_errors)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      
+      insert.run(
+        this.defaultConfigPath,
+        content,
+        1, // Assume valid for now
+        new Date().toISOString(),
+        null
+      );
+      
+      console.log(`Successfully loaded existing config from: ${this.defaultConfigPath}`);
+    } catch (error) {
+      console.log(`No existing config found at ${this.defaultConfigPath}, will use defaults`);
+    }
+  }
+
+  getDefaultXMLContent(): string {
     return `<?xml version="1.0"?>
 <allocations>
   <queue name="production">

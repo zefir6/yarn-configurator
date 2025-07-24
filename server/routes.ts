@@ -95,27 +95,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const configFile = await storage.getConfigFile();
       if (!configFile) {
-        // Try to read from default location
-        const defaultPath = process.env.HADOOP_CONF_DIR 
-          ? path.join(process.env.HADOOP_CONF_DIR, 'fair-scheduler.xml')
-          : '/etc/hadoop/conf/fair-scheduler.xml';
+        // Try to read from configured path
+        const configPath = process.env.FAIR_SCHEDULER_XML_PATH || 
+          (process.env.HADOOP_CONF_DIR 
+            ? path.join(process.env.HADOOP_CONF_DIR, 'fair-scheduler.xml')
+            : '/etc/hadoop/conf/fair-scheduler.xml');
         
         try {
-          const content = await storage.readConfigFromDisk(defaultPath);
+          console.log(`Attempting to read config from: ${configPath}`);
+          const content = await storage.readConfigFromDisk(configPath);
+          const validation = await validateXML(content);
+          
           const newConfig = await storage.saveConfigFile({
-            filePath: defaultPath,
+            filePath: configPath,
             content,
+            isValid: validation.isValid,
+            lastModified: new Date().toISOString(),
+            validationErrors: validation.errors ? JSON.stringify(validation.errors) : null,
+          });
+          console.log(`Successfully loaded config from disk: ${configPath}`);
+          return res.json(newConfig);
+        } catch (diskError) {
+          console.warn(`Failed to read config from disk (${configPath}):`, diskError);
+          // Return default config if file doesn't exist
+          const defaultContent = storage.getDefaultXMLContent();
+          const newConfig = await storage.saveConfigFile({
+            filePath: configPath,
+            content: defaultContent,
             isValid: true,
             lastModified: new Date().toISOString(),
             validationErrors: null,
           });
           return res.json(newConfig);
-        } catch (diskError) {
-          return res.status(404).json({ message: "No configuration file found" });
         }
       }
       res.json(configFile);
     } catch (error) {
+      console.error("Failed to fetch configuration:", error);
       res.status(500).json({ message: "Failed to fetch configuration" });
     }
   });
@@ -125,12 +141,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { content, filePath } = req.body;
       
+      // Use configured path if no filePath provided
+      const targetPath = filePath || process.env.FAIR_SCHEDULER_XML_PATH || 
+        (process.env.HADOOP_CONF_DIR 
+          ? path.join(process.env.HADOOP_CONF_DIR, 'fair-scheduler.xml')
+          : '/etc/hadoop/conf/fair-scheduler.xml');
+      
       // Validate XML
       const validation = await validateXML(content);
       
       // Save to memory
       const configFile = await storage.saveConfigFile({
-        filePath: filePath || '/etc/hadoop/conf/fair-scheduler.xml',
+        filePath: targetPath,
         content,
         isValid: validation.isValid,
         lastModified: new Date().toISOString(),
@@ -140,15 +162,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save to disk if valid
       if (validation.isValid) {
         try {
-          await storage.writeConfigToDisk(configFile.filePath, content);
+          console.log(`Writing config to disk: ${targetPath}`);
+          await storage.writeConfigToDisk(targetPath, content);
+          console.log(`Successfully wrote config to: ${targetPath}`);
         } catch (diskError) {
-          console.warn("Failed to write to disk:", diskError);
-          // Still return success for memory storage
+          console.error("Failed to write to disk:", diskError);
+          return res.status(500).json({ 
+            message: "Failed to write configuration to disk", 
+            error: diskError instanceof Error ? diskError.message : String(diskError)
+          });
         }
       }
 
       res.json(configFile);
     } catch (error) {
+      console.error("Failed to save configuration:", error);
       res.status(500).json({ message: "Failed to save configuration" });
     }
   });
