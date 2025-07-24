@@ -96,3 +96,71 @@ export async function parseQueuesFromXML(content: string): Promise<any[]> {
     });
   });
 }
+
+export function generateXMLFromQueues(queues: any[]): string {
+  // Filter out root queue for XML generation
+  const nonRootQueues = queues.filter(q => q.name !== 'root');
+  
+  let xml = '<?xml version="1.0"?>\n<allocations>\n';
+  
+  // Generate queue XML elements
+  nonRootQueues.forEach(queue => {
+    xml += `  <queue name="${queue.name}">\n`;
+    
+    if (queue.weight !== null && queue.weight !== undefined) {
+      xml += `    <weight>${queue.weight}</weight>\n`;
+    }
+    
+    if (queue.schedulingPolicy) {
+      xml += `    <schedulingPolicy>${queue.schedulingPolicy}</schedulingPolicy>\n`;
+    }
+    
+    // Generate minResources
+    if (queue.minMemory || queue.minVcores) {
+      const minParts = [];
+      if (queue.minMemory) minParts.push(`${queue.minMemory} mb`);
+      if (queue.minVcores) minParts.push(`${queue.minVcores} vcores`);
+      xml += `    <minResources>${minParts.join(',')}</minResources>\n`;
+    }
+    
+    // Generate maxResources
+    if (queue.maxMemory || queue.maxVcores) {
+      const maxParts = [];
+      if (queue.maxMemory) maxParts.push(`${queue.maxMemory} mb`);
+      if (queue.maxVcores) maxParts.push(`${queue.maxVcores} vcores`);
+      xml += `    <maxResources>${maxParts.join(',')}</maxResources>\n`;
+    }
+    
+    if (queue.maxRunningApps) {
+      xml += `    <maxRunningApps>${queue.maxRunningApps}</maxRunningApps>\n`;
+    }
+    
+    if (queue.maxAMShare) {
+      xml += `    <maxAMShare>${queue.maxAMShare}</maxAMShare>\n`;
+    }
+    
+    if (queue.allowPreemptionFrom === true) {
+      xml += `    <allowPreemptionFrom>true</allowPreemptionFrom>\n`;
+    }
+    
+    if (queue.allowPreemptionTo === true) {
+      xml += `    <allowPreemptionTo>true</allowPreemptionTo>\n`;
+    }
+    
+    xml += `  </queue>\n\n`;
+  });
+  
+  // Add global settings
+  xml += `  <userMaxAppsDefault>5</userMaxAppsDefault>\n`;
+  xml += `  <defaultQueueSchedulingPolicy>fair</defaultQueueSchedulingPolicy>\n\n`;
+  
+  xml += `  <queuePlacementPolicy>\n`;
+  xml += `    <rule name="specified"/>\n`;
+  xml += `    <rule name="user"/>\n`;
+  xml += `    <rule name="default" queue="default"/>\n`;
+  xml += `  </queuePlacementPolicy>\n`;
+  
+  xml += `</allocations>`;
+  
+  return xml;
+}

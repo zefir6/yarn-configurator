@@ -39,19 +39,11 @@ export class MemStorage implements IStorage {
     this.configFiles = new Map();
     this.currentQueueId = 1;
     this.currentConfigId = 1;
-    this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || '/etc/hadoop/conf/fair-scheduler.xml';
+    this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || './data/fair-scheduler.xml';
     this.pendingChanges = new Set();
     this.lastSyncedState = new Map();
     
-    // Initialize with default queues
-    this.initializeDefaultQueues();
-    
-    // Save initial synced state
-    this.queues.forEach((queue, id) => {
-      this.lastSyncedState.set(id, { ...queue });
-    });
-    
-    // Try to load existing config from disk
+    // Try to load existing config from disk first, then initialize
     this.loadConfigFromDisk();
   }
 
@@ -217,34 +209,56 @@ export class MemStorage implements IStorage {
   }
 
   private async loadConfigFromDisk(): Promise<void> {
+    let xmlContent: string;
+    
     try {
       console.log(`Attempting to load existing config from: ${this.defaultConfigPath}`);
-      const content = await this.readConfigFromDisk(this.defaultConfigPath);
-      
-      // Save to memory storage
-      const configFile: ConfigFile = {
-        id: this.currentConfigId++,
-        filePath: this.defaultConfigPath,
-        content,
-        isValid: true,
-        lastModified: new Date().toISOString(),
-        validationErrors: null
-      };
-      this.configFiles.set(configFile.id, configFile);
+      xmlContent = await this.readConfigFromDisk(this.defaultConfigPath);
       console.log(`Successfully loaded existing config from: ${this.defaultConfigPath}`);
     } catch (error) {
-      console.log(`No existing config found at ${this.defaultConfigPath}, will use defaults`);
+      console.log(`No existing config found at ${this.defaultConfigPath}, creating default file`);
       // Create default config file
-      const defaultContent = this.getDefaultXMLContent();
-      const configFile: ConfigFile = {
-        id: this.currentConfigId++,
-        filePath: this.defaultConfigPath,
-        content: defaultContent,
-        isValid: true,
-        lastModified: new Date().toISOString(),
-        validationErrors: null
-      };
-      this.configFiles.set(configFile.id, configFile);
+      xmlContent = this.getDefaultXMLContent();
+      
+      // Ensure directory exists and write default file
+      try {
+        await this.writeConfigToDisk(this.defaultConfigPath, xmlContent);
+        console.log(`Created default config file at: ${this.defaultConfigPath}`);
+      } catch (writeError) {
+        console.error(`Failed to create default config file:`, writeError);
+      }
+    }
+
+    // Save to memory storage
+    const configFile: ConfigFile = {
+      id: this.currentConfigId++,
+      filePath: this.defaultConfigPath,
+      content: xmlContent,
+      isValid: true,
+      lastModified: new Date().toISOString(),
+      validationErrors: null
+    };
+    this.configFiles.set(configFile.id, configFile);
+    
+    // Parse XML and sync queues from it
+    try {
+      const { parseQueuesFromXML } = await import('./xml-utils');
+      const parsedQueues = await parseQueuesFromXML(xmlContent);
+      await this.syncQueuesFromXML(parsedQueues);
+      
+      // Save initial synced state after loading from XML
+      this.queues.forEach((queue, id) => {
+        this.lastSyncedState.set(id, { ...queue });
+      });
+      
+      console.log(`Synchronized ${parsedQueues.length} queues from XML file`);
+    } catch (parseError) {
+      console.error('Failed to parse XML, using default queues:', parseError);
+      // Fallback to default queues if XML parsing fails
+      this.initializeDefaultQueues();
+      this.queues.forEach((queue, id) => {
+        this.lastSyncedState.set(id, { ...queue });
+      });
     }
   }
 
