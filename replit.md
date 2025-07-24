@@ -28,23 +28,22 @@ The application follows a monorepo structure with clear separation of concerns:
 
 ## Key Components
 
-### Database Layer
-- **ORM**: Drizzle ORM with SQLite as default storage
-- **Storage Options**: SQLite (default), PostgreSQL, or in-memory storage
-- **Schema**: Defined in `/shared/schema.ts` with two main tables:
-  - `queues` - Stores queue configuration data
-  - `configFiles` - Stores XML configuration file metadata
+### Storage Layer
+- **Storage**: Memory-only storage with XML file persistence
+- **Architecture**: Simple in-memory maps for queues and configuration data
+- **Persistence**: Direct XML file read/write to Hadoop configuration directory
+- **Schema**: Defined in `/shared/schema.ts` with data structures for:
+  - `queues` - Queue configuration data
+  - `configFiles` - XML configuration file metadata
 - **Validation**: Zod schemas for type-safe data validation
-- **SQLite Implementation**: Custom SqliteStorage class with better-sqlite3
 
 ### Backend Architecture
-- **Storage Interface**: Abstracted storage layer with multiple implementations:
-  - `SqliteStorage` - Default persistent storage using better-sqlite3
-  - `MemStorage` - In-memory storage for development/testing
-  - PostgreSQL support via Drizzle ORM
+- **Storage Interface**: Simplified storage layer with single implementation:
+  - `MemStorage` - In-memory storage with XML file persistence
 - **API Routes**: RESTful endpoints for queue and configuration management
 - **File Handling**: XML upload/download with validation
 - **Middleware**: Request logging and error handling
+- **Pending Changes**: Built-in staging system for modifications before disk write
 
 ### Frontend Architecture
 - **Component Library**: shadcn/ui components built on Radix UI primitives
@@ -57,13 +56,13 @@ The application follows a monorepo structure with clear separation of concerns:
 ### Queue Management
 1. Client requests queue data via TanStack Query
 2. Express API routes handle CRUD operations
-3. Storage layer (currently in-memory) manages data persistence
-4. Database operations will use Drizzle ORM when connected
+3. MemStorage manages data persistence to XML files
+4. Pending changes system stages modifications before disk write
 
 ### Configuration File Processing
 1. XML files uploaded through multipart form data
 2. Server validates XML structure and content
-3. Parsed queue configurations stored in database
+3. Parsed queue configurations stored in memory
 4. Generated XML can be downloaded or validated
 
 ### Form Validation
@@ -77,16 +76,12 @@ The application follows a monorepo structure with clear separation of concerns:
 ### Runtime Requirements
 - **Node.js**: 18.0.0+ (recommended: 20.x LTS)
 - **npm**: 8.0.0+ (package manager)
-- **better-sqlite3**: Native SQLite bindings (requires compilation)
 
 ### Core Dependencies
-- **@neondatabase/serverless** - Neon database client for PostgreSQL
-- **drizzle-orm** - TypeScript ORM for database operations
 - **@tanstack/react-query** - Server state management
 - **@hookform/resolvers** - Form validation integration
 - **xml2js** - XML parsing and generation
 - **multer** - File upload handling
-- **better-sqlite3** - SQLite database driver (default storage)
 
 ### UI Dependencies
 - **@radix-ui/** - Headless UI component primitives
