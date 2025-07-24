@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* Carbon Design System colors */
+  --carbon-blue: hsl(207, 100%, 54%);
+  --carbon-gray-70: hsl(0, 0%, 22.4%);
+  --carbon-gray-50: hsl(0, 0%, 43.5%);
+  --carbon-gray-30: hsl(0, 0%, 65.9%);
+  --carbon-gray-10: hsl(0, 0%, 95.7%);
+  --carbon-success: hsl(138, 62%, 47%);
+  --carbon-error: hsl(2, 85%, 49%);
+  --carbon-warning: hsl(48, 88%, 54%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .carbon-blue {
+    color: var(--carbon-blue);
+  }
+  
+  .bg-carbon-blue {
+    background-color: var(--carbon-blue);
+  }
+  
+  .text-carbon-gray-70 {
+    color: var(--carbon-gray-70);
+  }
+  
+  .text-carbon-gray-50 {
+    color: var(--carbon-gray-50);
+  }
+  
+  .text-carbon-gray-30 {
+    color: var(--carbon-gray-30);
+  }
+  
+  .bg-carbon-gray-10 {
+    background-color: var(--carbon-gray-10);
+  }
+  
+  .text-carbon-success {
+    color: var(--carbon-success);
+  }
+  
+  .bg-carbon-success {
+    background-color: var(--carbon-success);
+  }
+  
+  .text-carbon-error {
+    color: var(--carbon-error);
+  }
+  
+  .bg-carbon-error {
+    background-color: var(--carbon-error);
+  }
+  
+  .text-carbon-warning {
+    color: var(--carbon-warning);
+  }
+  
+  .bg-carbon-warning {
+    background-color: var(--carbon-warning);
+  }
+}
