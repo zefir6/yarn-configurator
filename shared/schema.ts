@@ -1,10 +1,10 @@
-import { pgTable, text, serial, integer, boolean, real } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Queue configuration schema
-export const queues = pgTable("queues", {
-  id: serial("id").primaryKey(),
+export const queues = sqliteTable("queues", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   parent: text("parent"),
   weight: real("weight").default(1.0),
@@ -15,17 +15,17 @@ export const queues = pgTable("queues", {
   maxVcores: integer("max_vcores"),
   maxRunningApps: integer("max_running_apps"),
   maxAMShare: real("max_am_share"),
-  allowPreemptionFrom: boolean("allow_preemption_from").default(false),
-  allowPreemptionTo: boolean("allow_preemption_to").default(false),
-  reservation: boolean("reservation").default(false),
+  allowPreemptionFrom: integer("allow_preemption_from", { mode: "boolean" }).default(false),
+  allowPreemptionTo: integer("allow_preemption_to", { mode: "boolean" }).default(false),
+  reservation: integer("reservation", { mode: "boolean" }).default(false),
 });
 
 // Configuration file metadata
-export const configFiles = pgTable("config_files", {
-  id: serial("id").primaryKey(),
+export const configFiles = sqliteTable("config_files", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   filePath: text("file_path").notNull(),
   content: text("content").notNull(),
-  isValid: boolean("is_valid").default(true),
+  isValid: integer("is_valid", { mode: "boolean" }).default(true),
   lastModified: text("last_modified"),
   validationErrors: text("validation_errors"),
 });

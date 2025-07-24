@@ -16,7 +16,7 @@ A comprehensive web-based GUI tool for managing Hadoop YARN Fair Scheduler confi
 
 - **Frontend**: React 18 with TypeScript, Vite build system
 - **Backend**: Express.js with TypeScript
-- **Database**: PostgreSQL with Drizzle ORM (with in-memory fallback)
+- **Database**: SQLite (default), PostgreSQL, or in-memory storage
 - **UI Components**: Radix UI with Tailwind CSS and shadcn/ui
 - **State Management**: TanStack Query for server state
 - **Form Handling**: React Hook Form with Zod validation
@@ -26,7 +26,7 @@ A comprehensive web-based GUI tool for managing Hadoop YARN Fair Scheduler confi
 
 - Node.js 20 or higher
 - npm or yarn package manager
-- Optional: PostgreSQL database (uses in-memory storage by default)
+- Optional: PostgreSQL database (uses SQLite by default)
 - Optional: Hadoop installation for direct file system integration
 
 ## Quick Start
@@ -44,7 +44,11 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-# Database Configuration (Optional)
+# Storage Configuration
+STORAGE_TYPE=sqlite              # Options: sqlite, memory (defaults to sqlite)
+SQLITE_DB_PATH=./data/yarn-scheduler.db  # Path for SQLite database file
+
+# PostgreSQL Configuration (if using PostgreSQL instead)
 DATABASE_URL=postgresql://username:password@localhost:5432/yarn_config
 
 # Hadoop Configuration Directory (Optional)
@@ -61,6 +65,32 @@ npm run dev
 ```
 
 The application will be available at `http://localhost:5000`
+
+## Storage Options
+
+The application supports three storage backends:
+
+### 1. SQLite (Default)
+- **Best for**: Local deployments, single-user setups, development
+- **Configuration**: Set `STORAGE_TYPE=sqlite` in your `.env` file
+- **Database file**: Stored at `./data/yarn-scheduler.db` by default
+- **Advantages**: 
+  - No external database setup required
+  - Persistent storage across restarts
+  - Zero-configuration for local use
+  - Ideal for Hadoop administrators
+
+### 2. In-Memory Storage
+- **Best for**: Development, testing, temporary use
+- **Configuration**: Set `STORAGE_TYPE=memory` in your `.env` file
+- **Advantages**: Fast performance, no persistent storage
+- **Note**: All data is lost when the application restarts
+
+### 3. PostgreSQL
+- **Best for**: Multi-user production environments
+- **Configuration**: Set up `DATABASE_URL` in your `.env` file
+- **Requires**: Running PostgreSQL instance
+- **Advantages**: Full ACID compliance, multi-user support
 
 ## Deployment Instructions
 

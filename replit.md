@@ -29,14 +29,19 @@ The application follows a monorepo structure with clear separation of concerns:
 ## Key Components
 
 ### Database Layer
-- **ORM**: Drizzle ORM with PostgreSQL dialect
+- **ORM**: Drizzle ORM with SQLite as default storage
+- **Storage Options**: SQLite (default), PostgreSQL, or in-memory storage
 - **Schema**: Defined in `/shared/schema.ts` with two main tables:
   - `queues` - Stores queue configuration data
   - `configFiles` - Stores XML configuration file metadata
 - **Validation**: Zod schemas for type-safe data validation
+- **SQLite Implementation**: Custom SqliteStorage class with better-sqlite3
 
 ### Backend Architecture
-- **Storage Interface**: Abstracted storage layer with in-memory implementation (`MemStorage`)
+- **Storage Interface**: Abstracted storage layer with multiple implementations:
+  - `SqliteStorage` - Default persistent storage using better-sqlite3
+  - `MemStorage` - In-memory storage for development/testing
+  - PostgreSQL support via Drizzle ORM
 - **API Routes**: RESTful endpoints for queue and configuration management
 - **File Handling**: XML upload/download with validation
 - **Middleware**: Request logging and error handling
