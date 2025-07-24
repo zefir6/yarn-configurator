@@ -34,13 +34,12 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
     queryKey: ["/api/config"],
   });
 
-  // Calculate statistics from actual queue data
-  const rootQueues = queues.filter(q => q.parent === "root" && q.name !== "root");
+  // Calculate statistics
   const stats = {
     totalQueues: queues.length,
-    totalMemory: rootQueues.reduce((sum, q) => sum + (q.maxMemory || 0), 0),
-    totalVCores: rootQueues.reduce((sum, q) => sum + (q.maxVcores || 0), 0),
-    defaultPolicy: config?.content?.includes('<defaultQueueSchedulingPolicy>fair</defaultQueueSchedulingPolicy>') ? "Fair" : "FIFO",
+    totalMemory: queues.reduce((sum, q) => sum + (q.maxMemory || 0), 0),
+    totalVCores: queues.reduce((sum, q) => sum + (q.maxVcores || 0), 0),
+    defaultPolicy: "Fair",
   };
 
   const formatMemory = (mb: number) => {
