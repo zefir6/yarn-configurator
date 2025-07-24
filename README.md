@@ -240,14 +240,32 @@ export PATH=~/.npm-global/bin:$PATH
 - Requires Visual Studio Build Tools or Visual Studio Community
 - PowerShell or Command Prompt supported
 - WSL2 recommended for better compatibility
+- Docker Desktop for Windows containerization
 
 #### macOS
 - Xcode Command Line Tools required: `xcode-select --install`
 - Homebrew recommended for Node.js installation
+- Docker Desktop for Mac for containerization
 
 #### Linux
 - Build essentials required: `apt-get install build-essential` (Ubuntu/Debian)
 - Python 3 required for native module compilation
+- Docker engine for containerization: `apt-get install docker.io docker-compose`
+
+### Docker-Specific Requirements
+
+#### Alpine Linux (Docker Image)
+The Dockerfile uses `node:20-alpine` which requires additional build tools:
+```bash
+# Automatically handled in Dockerfile
+apk add --no-cache python3 make g++
+```
+
+#### Native Module Compilation
+The `better-sqlite3` dependency requires native compilation:
+- **Development**: Handled automatically during `npm install`
+- **Docker**: Multi-stage build ensures proper compilation
+- **Production**: Pre-compiled binaries when possible
 
 ## Deployment Instructions
 
@@ -299,22 +317,72 @@ export PATH=~/.npm-global/bin:$PATH
 
 #### Option 2: Docker Deployment
 
-1. **Create Dockerfile**:
-   ```dockerfile
-   FROM node:20-alpine
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm ci --only=production
-   COPY . .
-   RUN npm run build
-   EXPOSE 5000
-   CMD ["npm", "start"]
+The project includes a multi-stage Dockerfile that handles build dependencies correctly:
+
+1. **Build and Run Container**:
+   ```bash
+   # Build the Docker image
+   docker build -t yarn-scheduler-manager .
+   
+   # Run with SQLite storage (default)
+   docker run -d \
+     --name yarn-scheduler \
+     -p 5000:5000 \
+     -v $(pwd)/data:/app/data \
+     yarn-scheduler-manager
+   
+   # Run with Hadoop configuration volume
+   docker run -d \
+     --name yarn-scheduler \
+     -p 5000:5000 \
+     -v /etc/hadoop/conf:/etc/hadoop/conf:ro \
+     -v $(pwd)/data:/app/data \
+     yarn-scheduler-manager
    ```
 
-2. **Build and Run Container**:
+2. **Docker Compose (Recommended)**:
+   
+   Create `docker-compose.yml`:
+   ```yaml
+   version: '3.8'
+   services:
+     yarn-scheduler:
+       build: .
+       ports:
+         - "5000:5000"
+       volumes:
+         - ./data:/app/data
+         - /etc/hadoop/conf:/etc/hadoop/conf:ro
+       environment:
+         - NODE_ENV=production
+         - STORAGE_TYPE=sqlite
+         - SQLITE_DB_PATH=/app/data/yarn-scheduler.db
+         - HADOOP_CONF_DIR=/etc/hadoop/conf
+       restart: unless-stopped
+       healthcheck:
+         test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/queues', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+         interval: 30s
+         timeout: 10s
+         retries: 3
+   ```
+   
+   Run with Docker Compose:
    ```bash
-   docker build -t yarn-scheduler-manager .
-   docker run -p 5000:5000 -v /etc/hadoop/conf:/etc/hadoop/conf yarn-scheduler-manager
+   docker-compose up -d
+   ```
+
+3. **Troubleshooting Docker Build Issues**:
+   
+   If you encounter build errors:
+   ```bash
+   # Clean build with no cache
+   docker build --no-cache -t yarn-scheduler-manager .
+   
+   # Build with build args for debugging
+   docker build --progress=plain -t yarn-scheduler-manager .
+   
+   # Check build dependencies
+   docker run --rm -it node:20-alpine sh -c "apk add --no-cache python3 make g++ && npm --version"
    ```
 
 #### Option 3: System Service Deployment

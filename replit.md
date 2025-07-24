@@ -109,7 +109,8 @@ The application follows a monorepo structure with clear separation of concerns:
 ### Environment Configuration
 - Uses environment variables for database connection
 - Supports both development and production modes
-- Replit-specific configurations for cloud deployment
+- Docker containerization with multi-stage builds
+- SQLite default storage with persistent volumes
 
 ### Key Features
 - YARN queue hierarchy management
