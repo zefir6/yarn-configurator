@@ -1,0 +1,21 @@
+# Development override for docker-compose
+# This file is automatically loaded by docker-compose
+# Use for development-specific configurations
+
+version: '3.8'
+
+services:
+  yarn-scheduler:
+    # Override for development
+    build:
+      context: .
+      target: builder  # Use builder stage for development
+    volumes:
+      # Mount source code for development
+      - ./server:/app/server
+      - ./client:/app/client
+      - ./shared:/app/shared
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=development
+    command: npm run dev

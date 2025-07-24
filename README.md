@@ -342,33 +342,38 @@ The project includes a multi-stage Dockerfile that handles build dependencies co
 
 2. **Docker Compose (Recommended)**:
    
-   Create `docker-compose.yml`:
-   ```yaml
-   version: '3.8'
-   services:
-     yarn-scheduler:
-       build: .
-       ports:
-         - "5000:5000"
-       volumes:
-         - ./data:/app/data
-         - /etc/hadoop/conf:/etc/hadoop/conf:ro
-       environment:
-         - NODE_ENV=production
-         - STORAGE_TYPE=sqlite
-         - SQLITE_DB_PATH=/app/data/yarn-scheduler.db
-         - HADOOP_CONF_DIR=/etc/hadoop/conf
-       restart: unless-stopped
-       healthcheck:
-         test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/queues', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
-         interval: 30s
-         timeout: 10s
-         retries: 3
+   The project includes a complete `docker-compose.yml` configuration:
+   
+   ```bash
+   # Production deployment
+   docker-compose up -d
+   
+   # Development with hot reload
+   docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+   
+   # View logs
+   docker-compose logs -f yarn-scheduler
+   
+   # Stop services
+   docker-compose down
+   
+   # Rebuild and start
+   docker-compose up --build -d
    ```
    
-   Run with Docker Compose:
+   **Configuration Options:**
+   
    ```bash
-   docker-compose up -d
+   # With Hadoop integration
+   # Edit docker-compose.yml and uncomment:
+   # - /etc/hadoop/conf:/etc/hadoop/conf:ro
+   # - HADOOP_CONF_DIR=/etc/hadoop/conf
+   
+   # With PostgreSQL database
+   # Uncomment the postgres service in docker-compose.yml
+   # Update environment variables:
+   # - STORAGE_TYPE=postgresql
+   # - DATABASE_URL=postgresql://yarn_user:yarn_password@postgres:5432/yarn_config
    ```
 
 3. **Troubleshooting Docker Build Issues**:
@@ -384,6 +389,36 @@ The project includes a multi-stage Dockerfile that handles build dependencies co
    # Check build dependencies
    docker run --rm -it node:20-alpine sh -c "apk add --no-cache python3 make g++ && npm --version"
    ```
+
+## Docker Quick Start Guide
+
+For the fastest Docker deployment:
+
+```bash
+# 1. Clone and enter directory
+git clone <repository-url>
+cd yarn-fair-scheduler-manager
+
+# 2. Start with Docker Compose (recommended)
+docker-compose up -d
+
+# 3. Check if it's running
+docker-compose ps
+docker-compose logs yarn-scheduler
+
+# 4. Access the application
+open http://localhost:5000
+
+# 5. Stop when done
+docker-compose down
+```
+
+### Docker Compose Files Structure
+
+- **`docker-compose.yml`** - Production configuration with SQLite
+- **`docker-compose.override.yml`** - Development overrides with hot reload
+- **`Dockerfile`** - Multi-stage build with native module compilation
+- **`.dockerignore`** - Optimized build context
 
 #### Option 3: System Service Deployment
 
