@@ -114,7 +114,7 @@ node --version  # Should show v20.19.3 or compatible
 
 ### 2. Environment Configuration
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (see `.env.example` for template):
 
 ```env
 # Storage Configuration
@@ -124,8 +124,9 @@ SQLITE_DB_PATH=./data/yarn-scheduler.db  # Path for SQLite database file
 # PostgreSQL Configuration (if using PostgreSQL instead)
 DATABASE_URL=postgresql://username:password@localhost:5432/yarn_config
 
-# Hadoop Configuration Directory (Optional)
+# Hadoop Configuration (Optional)
 HADOOP_CONF_DIR=/etc/hadoop/conf
+FAIR_SCHEDULER_XML_PATH=/etc/hadoop/conf/fair-scheduler.xml  # Custom path for fair-scheduler.xml
 
 # Server Configuration (Optional)
 PORT=5000                        # Application port
@@ -364,16 +365,32 @@ The project includes a multi-stage Dockerfile that handles build dependencies co
    **Configuration Options:**
    
    ```bash
-   # With Hadoop integration
-   # Edit docker-compose.yml and uncomment:
-   # - /etc/hadoop/conf:/etc/hadoop/conf:ro
-   # - HADOOP_CONF_DIR=/etc/hadoop/conf
+   # Custom Hadoop configuration directory
+   docker-compose up -d \
+     -e HADOOP_CONF_DIR=/custom/hadoop/conf \
+     -e FAIR_SCHEDULER_XML_PATH=/custom/hadoop/conf/fair-scheduler.xml
+   
+   # Custom fair-scheduler.xml location only
+   docker-compose up -d \
+     -e FAIR_SCHEDULER_XML_PATH=/opt/hadoop/etc/fair-scheduler.xml
    
    # With PostgreSQL database
    # Uncomment the postgres service in docker-compose.yml
    # Update environment variables:
    # - STORAGE_TYPE=postgresql
    # - DATABASE_URL=postgresql://yarn_user:yarn_password@postgres:5432/yarn_config
+   ```
+   
+   **Volume Customization:**
+   
+   For custom Hadoop paths, edit `docker-compose.yml`:
+   ```yaml
+   volumes:
+     - ./data:/app/data
+     - /custom/hadoop/conf:/custom/hadoop/conf:rw  # Custom path
+   environment:
+     - HADOOP_CONF_DIR=/custom/hadoop/conf
+     - FAIR_SCHEDULER_XML_PATH=/custom/hadoop/conf/fair-scheduler.xml
    ```
 
 3. **Troubleshooting Docker Build Issues**:
@@ -415,10 +432,11 @@ docker-compose down
 
 ### Docker Compose Files Structure
 
-- **`docker-compose.yml`** - Production configuration with SQLite
+- **`docker-compose.yml`** - Production configuration with RW Hadoop volume mapping
 - **`docker-compose.override.yml`** - Development overrides with hot reload
 - **`Dockerfile`** - Multi-stage build with native module compilation
 - **`.dockerignore`** - Optimized build context
+- **`.env.example`** - Environment variable template
 
 #### Option 3: System Service Deployment
 

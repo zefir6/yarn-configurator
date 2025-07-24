@@ -8,16 +8,17 @@ services:
       - "5000:5000"
     volumes:
       - ./data:/app/data
-      # Uncomment to mount Hadoop configuration
-      # - /etc/hadoop/conf:/etc/hadoop/conf:ro
+      # Mount Hadoop configuration as read-write by default
+      - /etc/hadoop/conf:/etc/hadoop/conf:rw
     environment:
       - NODE_ENV=production
       - HOST=0.0.0.0
       - PORT=5000
       - STORAGE_TYPE=sqlite
       - SQLITE_DB_PATH=/app/data/yarn-scheduler.db
-      # Uncomment if using Hadoop integration
-      # - HADOOP_CONF_DIR=/etc/hadoop/conf
+      # Hadoop configuration
+      - HADOOP_CONF_DIR=/etc/hadoop/conf
+      - FAIR_SCHEDULER_XML_PATH=/etc/hadoop/conf/fair-scheduler.xml
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/queues', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]

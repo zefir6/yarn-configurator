@@ -111,6 +111,8 @@ The application follows a monorepo structure with clear separation of concerns:
 - Supports both development and production modes
 - Docker containerization with multi-stage builds
 - SQLite default storage with persistent volumes
+- Configurable Hadoop configuration directory and fair-scheduler.xml placement
+- Read-write access to /etc/hadoop/conf by default in Docker
 
 ### Key Features
 - YARN queue hierarchy management
