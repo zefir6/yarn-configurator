@@ -162,7 +162,7 @@ export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProp
   };
 
   const getParentQueues = () => {
-    return queues.filter(q => q.name !== form.watch("name"));
+    return queues.filter(q => q.name !== form.watch("name") && q.name !== "root");
   };
 
   if (isLoading) {
