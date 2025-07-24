@@ -17,6 +17,7 @@ export interface IStorage {
   writeConfigToDisk(filePath: string, content: string): Promise<void>;
   getDefaultXMLContent(): string;
   syncQueuesFromXML(queues: any[]): Promise<void>;
+  reloadFromDisk(): Promise<void>;
   
   // Pending changes operations
   getPendingChangesCount(): Promise<number>;
@@ -401,6 +402,47 @@ export class MemStorage implements IStorage {
     // Clear pending changes
     this.pendingChanges.clear();
     console.log('Discarded all pending changes');
+  }
+
+  async reloadFromDisk(): Promise<void> {
+    console.log(`Reloading configuration from disk: ${this.defaultConfigPath}`);
+    
+    try {
+      // Read the current file from disk
+      const xmlContent = await this.readConfigFromDisk(this.defaultConfigPath);
+      
+      // Update config file in memory
+      const configFile: ConfigFile = {
+        id: this.currentConfigId++,
+        filePath: this.defaultConfigPath,
+        content: xmlContent,
+        isValid: true,
+        lastModified: new Date().toISOString(),
+        validationErrors: null
+      };
+      
+      // Clear existing config and add new one
+      this.configFiles.clear();
+      this.configFiles.set(configFile.id, configFile);
+      
+      // Parse XML and sync queues from it
+      const { parseQueuesFromXML } = await import('./xml-utils');
+      const parsedQueues = await parseQueuesFromXML(xmlContent);
+      await this.syncQueuesFromXML(parsedQueues);
+      
+      // Clear pending changes and update synced state
+      this.pendingChanges.clear();
+      this.lastSyncedState.clear();
+      this.queues.forEach((queue, id) => {
+        this.lastSyncedState.set(id, { ...queue });
+      });
+      
+      console.log(`Successfully reloaded ${parsedQueues.length} queues from disk`);
+      
+    } catch (error) {
+      console.error('Failed to reload from disk:', error);
+      throw new Error(`Failed to reload configuration from disk: ${error}`);
+    }
   }
 }
 

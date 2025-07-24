@@ -273,6 +273,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reload configuration from disk
+  app.post("/api/config/reload", async (req, res) => {
+    try {
+      await storage.reloadFromDisk();
+      res.json({ message: "Configuration reloaded from disk successfully" });
+    } catch (error) {
+      console.error("Failed to reload configuration:", error);
+      res.status(500).json({ 
+        message: "Failed to reload configuration from disk",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Get pending changes count
   app.get("/api/pending-changes", async (req, res) => {
     try {

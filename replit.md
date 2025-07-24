@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application for managing YARN Fair Scheduler configurations. The application provides a visual interface for creating, editing, and managing Hadoop YARN queue configurations, with the ability to generate and validate XML configuration files. The application is ready for local deployment with comprehensive documentation and instructions.
+This is a full-stack web application for managing YARN Fair Scheduler configurations. The application provides a visual interface for creating, editing, and managing Hadoop YARN queue configurations, with the ability to generate and validate XML configuration files. The application uses memory-only storage with XML file persistence and supports automatic reloading from disk when files are modified externally. The application is ready for local deployment with comprehensive documentation and instructions.
 
 ## User Preferences
 
@@ -28,22 +28,23 @@ The application follows a monorepo structure with clear separation of concerns:
 
 ## Key Components
 
-### Database Layer
-- **ORM**: Drizzle ORM with SQLite as default storage
-- **Storage Options**: SQLite (default), PostgreSQL, or in-memory storage
-- **Schema**: Defined in `/shared/schema.ts` with two main tables:
-  - `queues` - Stores queue configuration data
-  - `configFiles` - Stores XML configuration file metadata
+### Storage Layer
+- **Memory-Only Storage**: Pure in-memory storage using Map data structures
+- **XML File Persistence**: Configuration persisted to XML files on disk (./data/fair-scheduler.xml by default)
+- **File Synchronization**: Bidirectional sync between memory storage and XML files
+- **Schema**: Defined in `/shared/schema.ts` with two main types:
+  - `Queue` - Queue configuration data structure
+  - `ConfigFile` - XML configuration file metadata
 - **Validation**: Zod schemas for type-safe data validation
-- **SQLite Implementation**: Custom SqliteStorage class with better-sqlite3
+- **Reload Functionality**: Manual reload from disk when XML files are modified externally
 
 ### Backend Architecture
-- **Storage Interface**: Abstracted storage layer with multiple implementations:
-  - `SqliteStorage` - Default persistent storage using better-sqlite3
-  - `MemStorage` - In-memory storage for development/testing
-  - PostgreSQL support via Drizzle ORM
+- **Storage Interface**: Abstracted storage layer with memory-only implementation:
+  - `MemStorage` - Pure in-memory storage with XML file persistence
+  - Pending changes tracking for apply/discard functionality
+  - File reload capability for external file modifications
 - **API Routes**: RESTful endpoints for queue and configuration management
-- **File Handling**: XML upload/download with validation
+- **File Handling**: XML upload/download with validation and disk synchronization
 - **Middleware**: Request logging and error handling
 
 ### Frontend Architecture

@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <allocations>
   <queue name="production">
-    <weight>3.0</weight>
+    <weight>4.0</weight>
     <schedulingPolicy>fair</schedulingPolicy>
-    <minResources>2048 mb,2 vcores</minResources>
-    <maxResources>16384 mb,8 vcores</maxResources>
-    <maxRunningApps>100</maxRunningApps>
-    <maxAMShare>0.3</maxAMShare>
+    <minResources>4096 mb,4 vcores</minResources>
+    <maxResources>32768 mb,16 vcores</maxResources>
+    <maxRunningApps>200</maxRunningApps>
+    <maxAMShare>0.4</maxAMShare>
     <allowPreemptionFrom>true</allowPreemptionFrom>
   </queue>
   

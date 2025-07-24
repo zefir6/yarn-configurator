@@ -14,7 +14,8 @@ import {
   Download, 
   AlertCircle, 
   CheckCircle, 
-  Code2 
+  Code2,
+  RefreshCw
 } from "lucide-react";
 
 interface ValidationResult {
@@ -75,6 +76,7 @@ export default function XmlEditor() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/queues"] });
       setHasChanges(false);
       toast({
         title: "Success",
@@ -85,6 +87,30 @@ export default function XmlEditor() {
       toast({
         title: "Error",
         description: "Failed to save configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reload from disk mutation
+  const reloadMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/config/reload');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/queues"] });
+      setHasChanges(false);
+      toast({
+        title: "Success",
+        description: "Configuration reloaded from disk successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to reload configuration from disk",
         variant: "destructive",
       });
     },
@@ -160,6 +186,10 @@ export default function XmlEditor() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleReload = () => {
+    reloadMutation.mutate();
   };
 
   const handleDownload = () => {
@@ -282,6 +312,15 @@ export default function XmlEditor() {
           {/* Action Buttons */}
           <div className="flex justify-between space-x-4 mt-6">
             <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={handleReload}
+                disabled={reloadMutation.isPending}
+                className="text-carbon-gray-70 border-orange-300 text-orange-600 hover:bg-orange-50"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                {reloadMutation.isPending ? "Reloading..." : "Reload from Disk"}
+              </Button>
               <Button
                 variant="outline"
                 onClick={handleDownload}
