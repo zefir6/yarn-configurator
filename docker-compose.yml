@@ -48,6 +48,6 @@ networks:
   yarn-scheduler-network:
     driver: bridge
 
-volumes:
+# volumes: 
   # Uncomment if using PostgreSQL
   # postgres_data:
