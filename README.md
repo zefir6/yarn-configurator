@@ -54,8 +54,9 @@ DATABASE_URL=postgresql://username:password@localhost:5432/yarn_config
 # Hadoop Configuration Directory (Optional)
 HADOOP_CONF_DIR=/etc/hadoop/conf
 
-# Application Port (Optional)
-PORT=5000
+# Server Configuration (Optional)
+PORT=5000                        # Application port
+HOST=0.0.0.0                     # Listen on all interfaces (use 127.0.0.1 for localhost only)
 ```
 
 ### 3. Start the Application
@@ -64,7 +65,9 @@ PORT=5000
 npm run dev
 ```
 
-The application will be available at `http://localhost:5000`
+The application will be available at:
+- Local access: `http://localhost:5000`
+- Network access: `http://[your-ip-address]:5000` (when HOST=0.0.0.0)
 
 ## Storage Options
 
@@ -91,6 +94,35 @@ The application supports three storage backends:
 - **Configuration**: Set up `DATABASE_URL` in your `.env` file
 - **Requires**: Running PostgreSQL instance
 - **Advantages**: Full ACID compliance, multi-user support
+
+## Network Access Configuration
+
+The application supports flexible network binding for different deployment scenarios:
+
+### Local Access Only (Secure)
+```env
+HOST=127.0.0.1
+PORT=5000
+```
+- Application accessible only from the local machine
+- Recommended for development and single-user setups
+- Access: `http://localhost:5000`
+
+### Network Access (Production)
+```env
+HOST=0.0.0.0
+PORT=5000
+```
+- Application accessible from any network interface
+- Ideal for Hadoop cluster deployments
+- Access from any machine: `http://[server-ip]:5000`
+- **Note**: Ensure proper firewall rules and security measures
+
+### Custom Configuration
+```env
+HOST=192.168.1.100  # Bind to specific interface
+PORT=8080           # Custom port
+```
 
 ## Deployment Instructions
 
