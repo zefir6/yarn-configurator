@@ -98,60 +98,115 @@ export async function parseQueuesFromXML(content: string): Promise<any[]> {
 }
 
 export function generateXMLFromQueues(queues: any[]): string {
-  // Filter out root queue for XML generation
-  const nonRootQueues = queues.filter(q => q.name !== 'root');
+  // FORCE DEBUG OUTPUT TO CONSOLE
+  console.log('>>> XML GENERATION FUNCTION CALLED WITH', queues.length, 'QUEUES <<<');
   
   let xml = '<?xml version="1.0"?>\n<allocations>\n';
   
-  // Generate queue XML elements
-  nonRootQueues.forEach(queue => {
-    xml += `  <queue name="${queue.name}">\n`;
-    
-    if (queue.weight !== null && queue.weight !== undefined) {
-      xml += `    <weight>${queue.weight}</weight>\n`;
-    }
-    
-    if (queue.schedulingPolicy) {
-      xml += `    <schedulingPolicy>${queue.schedulingPolicy}</schedulingPolicy>\n`;
-    }
-    
-    // Generate minResources
-    if (queue.minMemory || queue.minVcores) {
-      const minParts = [];
-      if (queue.minMemory) minParts.push(`${queue.minMemory} mb`);
-      if (queue.minVcores) minParts.push(`${queue.minVcores} vcores`);
-      xml += `    <minResources>${minParts.join(',')}</minResources>\n`;
-    }
-    
-    // Generate maxResources
-    if (queue.maxMemory || queue.maxVcores) {
-      const maxParts = [];
-      if (queue.maxMemory) maxParts.push(`${queue.maxMemory} mb`);
-      if (queue.maxVcores) maxParts.push(`${queue.maxVcores} vcores`);
-      xml += `    <maxResources>${maxParts.join(',')}</maxResources>\n`;
-    }
-    
-    if (queue.maxRunningApps) {
-      xml += `    <maxRunningApps>${queue.maxRunningApps}</maxRunningApps>\n`;
-    }
-    
-    if (queue.maxAMShare) {
-      xml += `    <maxAMShare>${queue.maxAMShare}</maxAMShare>\n`;
-    }
-    
-    if (queue.allowPreemptionFrom === true) {
-      xml += `    <allowPreemptionFrom>true</allowPreemptionFrom>\n`;
-    }
-    
-    if (queue.allowPreemptionTo === true) {
-      xml += `    <allowPreemptionTo>true</allowPreemptionTo>\n`;
-    }
-    
-    xml += `  </queue>\n\n`;
+  // Build a hierarchy map for easier processing
+  const queueMap = new Map();
+  const childrenMap = new Map();
+  
+  // Initialize maps
+  queues.forEach(queue => {
+    queueMap.set(queue.name, queue);
+    childrenMap.set(queue.name, []);
   });
   
+  // Build parent-child relationships
+  queues.forEach(queue => {
+    if (queue.parent && childrenMap.has(queue.parent)) {
+      childrenMap.get(queue.parent).push(queue);
+    }
+  });
+  
+  // Function to generate queue XML recursively
+  const generateQueueXML = (queue: any, depth: number = 1): string => {
+    const indent = '  '.repeat(depth);
+    let queueXml = `${indent}<queue name="${queue.name}">\n`;
+    
+    // Add queue properties (but skip them for root queue to keep it clean)
+    if (queue.name !== 'root') {
+      if (queue.weight !== null && queue.weight !== undefined) {
+        queueXml += `${indent}  <weight>${queue.weight}</weight>\n`;
+      }
+      
+      if (queue.schedulingPolicy) {
+        queueXml += `${indent}  <schedulingPolicy>${queue.schedulingPolicy}</schedulingPolicy>\n`;
+      }
+      
+      // Generate minResources
+      if (queue.minMemory || queue.minVcores) {
+        const minParts = [];
+        if (queue.minMemory) minParts.push(`${queue.minMemory} mb`);
+        if (queue.minVcores) minParts.push(`${queue.minVcores} vcores`);
+        queueXml += `${indent}  <minResources>${minParts.join(',')}</minResources>\n`;
+      }
+      
+      // Generate maxResources
+      if (queue.maxMemory || queue.maxVcores) {
+        const maxParts = [];
+        if (queue.maxMemory) maxParts.push(`${queue.maxMemory} mb`);
+        if (queue.maxVcores) maxParts.push(`${queue.maxVcores} vcores`);
+        queueXml += `${indent}  <maxResources>${maxParts.join(',')}</maxResources>\n`;
+      }
+      
+      if (queue.maxRunningApps) {
+        queueXml += `${indent}  <maxRunningApps>${queue.maxRunningApps}</maxRunningApps>\n`;
+      }
+      
+      if (queue.maxAMShare) {
+        queueXml += `${indent}  <maxAMShare>${queue.maxAMShare}</maxAMShare>\n`;
+      }
+      
+      if (queue.allowPreemptionFrom === true) {
+        queueXml += `${indent}  <allowPreemptionFrom>true</allowPreemptionFrom>\n`;
+      }
+      
+      if (queue.allowPreemptionTo === true) {
+        queueXml += `${indent}  <allowPreemptionTo>true</allowPreemptionTo>\n`;
+      }
+    } else {
+      // For root queue, add minimal properties if needed
+      if (queue.weight && queue.weight !== 1) {
+        queueXml += `${indent}  <weight>${queue.weight}</weight>\n`;
+      }
+      if (queue.schedulingPolicy && queue.schedulingPolicy !== 'fair') {
+        queueXml += `${indent}  <schedulingPolicy>${queue.schedulingPolicy}</schedulingPolicy>\n`;
+      }
+    }
+    
+    // Add child queues
+    const children = childrenMap.get(queue.name) || [];
+    children.forEach((child: any) => {
+      queueXml += generateQueueXML(child, depth + 1);
+    });
+    
+    queueXml += `${indent}</queue>\n`;
+    return queueXml;
+  };
+  
+  // Find root queue and generate hierarchical structure
+  const rootQueue = queueMap.get('root');
+  
+  // DEBUG: Force check what we have in the map
+  console.log('Available queue names in map:', Array.from(queueMap.keys()));
+  console.log('Root queue search result:', rootQueue ? 'FOUND' : 'NOT FOUND');
+  
+  if (rootQueue) {
+    console.log('Generating hierarchical XML with root queue');
+    xml += generateQueueXML(rootQueue);
+  } else {
+    console.log('Falling back to flat structure - no root queue found');
+    // Fallback: generate top-level queues without root
+    const topLevelQueues = queues.filter(q => !q.parent || q.parent === null);
+    topLevelQueues.forEach((queue: any) => {
+      xml += generateQueueXML(queue);
+    });
+  }
+  
   // Add global settings
-  xml += `  <userMaxAppsDefault>5</userMaxAppsDefault>\n`;
+  xml += `\n  <userMaxAppsDefault>5</userMaxAppsDefault>\n`;
   xml += `  <defaultQueueSchedulingPolicy>fair</defaultQueueSchedulingPolicy>\n\n`;
   
   xml += `  <queuePlacementPolicy>\n`;

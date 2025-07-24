@@ -265,10 +265,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate XML from queues
   app.get("/api/config/generate", async (req, res) => {
     try {
+      console.log('=== GENERATE XML ROUTE CALLED ===');
       const queues = await storage.getQueues();
+      console.log('Retrieved queues from storage:', queues.length);
+      console.log('Queue details:', queues.map(q => ({ name: q.name, parent: q.parent })));
       const xmlContent = generateXMLFromQueues(queues);
+      console.log('Generated XML contains root:', xmlContent.includes('queue name="root"'));
       res.json({ content: xmlContent });
     } catch (error) {
+      console.error('Generate XML error:', error);
       res.status(500).json({ message: "Failed to generate XML" });
     }
   });
@@ -347,9 +352,48 @@ async function validateXML(content: string): Promise<{ isValid: boolean; errors?
 
 
 function generateXMLFromQueues(queues: any[]): string {
+  console.log('LOCAL generateXMLFromQueues called with', queues.length, 'queues');
+  
+  // Build hierarchical structure with root queue
+  const buildQueueElement = (queue: any, allQueues: any[]): any => {
+    const queueElement: any = {
+      $: { name: queue.name }
+    };
+
+    // Add properties for non-root queues
+    if (queue.name !== 'root') {
+      if (queue.weight) queueElement.weight = queue.weight;
+      if (queue.schedulingPolicy) queueElement.schedulingPolicy = queue.schedulingPolicy;
+      
+      if (queue.minMemory || queue.minVcores) {
+        queueElement.minResources = `${queue.minMemory || 0} mb,${queue.minVcores || 0} vcores`;
+      }
+      
+      if (queue.maxMemory || queue.maxVcores) {
+        queueElement.maxResources = `${queue.maxMemory || 0} mb,${queue.maxVcores || 0} vcores`;
+      }
+      
+      if (queue.maxRunningApps) queueElement.maxRunningApps = queue.maxRunningApps;
+      if (queue.maxAMShare) queueElement.maxAMShare = queue.maxAMShare;
+      if (queue.allowPreemptionFrom) queueElement.allowPreemptionFrom = 'true';
+      if (queue.allowPreemptionTo) queueElement.allowPreemptionTo = 'true';
+    } else {
+      // Root queue properties
+      if (queue.weight && queue.weight !== 1) queueElement.weight = queue.weight;
+      if (queue.schedulingPolicy && queue.schedulingPolicy !== 'fair') queueElement.schedulingPolicy = queue.schedulingPolicy;
+    }
+
+    // Find and add child queues
+    const children = allQueues.filter(q => q.parent === queue.name && q.name !== queue.name);
+    if (children.length > 0) {
+      queueElement.queue = children.map(child => buildQueueElement(child, allQueues));
+    }
+
+    return queueElement;
+  };
+
   const allocations: any = {
     $: { xmlns: undefined },
-    queue: [],
     userMaxAppsDefault: 5,
     defaultQueueSchedulingPolicy: 'fair',
     queuePlacementPolicy: {
@@ -361,31 +405,20 @@ function generateXMLFromQueues(queues: any[]): string {
     }
   };
 
-  queues.forEach(queue => {
-    if (queue.name === 'root') return; // Skip root queue in XML
-
-    const queueElement: any = {
-      $: { name: queue.name }
-    };
-
-    if (queue.weight) queueElement.weight = queue.weight;
-    if (queue.schedulingPolicy) queueElement.schedulingPolicy = queue.schedulingPolicy;
-    
-    if (queue.minMemory || queue.minVcores) {
-      queueElement.minResources = `${queue.minMemory || 0} mb,${queue.minVcores || 0} vcores`;
-    }
-    
-    if (queue.maxMemory || queue.maxVcores) {
-      queueElement.maxResources = `${queue.maxMemory || 0} mb,${queue.maxVcores || 0} vcores`;
-    }
-    
-    if (queue.maxRunningApps) queueElement.maxRunningApps = queue.maxRunningApps;
-    if (queue.maxAMShare) queueElement.maxAMShare = queue.maxAMShare;
-    if (queue.allowPreemptionFrom) queueElement.allowPreemptionFrom = 'true';
-    if (queue.allowPreemptionTo) queueElement.allowPreemptionTo = 'true';
-
-    allocations.queue.push(queueElement);
-  });
+  // Find root queue and build hierarchical structure
+  const rootQueue = queues.find(q => q.name === 'root');
+  if (rootQueue) {
+    console.log('Found root queue, building hierarchical structure');
+    allocations.queue = buildQueueElement(rootQueue, queues);
+  } else {
+    console.log('No root queue found, using flat structure');
+    // Fallback to flat structure
+    allocations.queue = [];
+    queues.forEach(queue => {
+      if (queue.name === 'root') return;
+      allocations.queue.push(buildQueueElement(queue, queues));
+    });
+  }
 
   const builder = new Builder({ 
     xmldec: { version: '1.0' },

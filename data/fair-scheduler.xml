@@ -1,35 +1,35 @@
 <?xml version="1.0"?>
 <allocations>
-  <queue name="production">
-    <weight>4.0</weight>
+  <queue name="root">
+    <weight>1</weight>
     <schedulingPolicy>fair</schedulingPolicy>
-    <minResources>4096 mb,4 vcores</minResources>
-    <maxResources>32768 mb,16 vcores</maxResources>
-    <maxRunningApps>200</maxRunningApps>
-    <maxAMShare>0.4</maxAMShare>
-    <allowPreemptionFrom>true</allowPreemptionFrom>
+    <queue name="production">
+      <weight>4</weight>
+      <schedulingPolicy>fair</schedulingPolicy>
+      <minResources>4096 mb,4 vcores</minResources>
+      <maxResources>32768 mb,16 vcores</maxResources>
+      <maxRunningApps>200</maxRunningApps>
+      <maxAMShare>0.4</maxAMShare>
+      <allowPreemptionFrom>true</allowPreemptionFrom>
+    </queue>
+    <queue name="development">
+      <weight>2</weight>
+      <schedulingPolicy>fair</schedulingPolicy>
+      <minResources>1024 mb,1 vcores</minResources>
+      <maxResources>8192 mb,4 vcores</maxResources>
+      <maxRunningApps>50</maxRunningApps>
+      <maxAMShare>0.5</maxAMShare>
+    </queue>
+    <queue name="default">
+      <weight>1</weight>
+      <schedulingPolicy>fair</schedulingPolicy>
+      <minResources>1024 mb,1 vcores</minResources>
+      <maxResources>8192 mb,4 vcores</maxResources>
+      <maxRunningApps>25</maxRunningApps>
+    </queue>
   </queue>
-  
-  <queue name="development">
-    <weight>2.0</weight>
-    <schedulingPolicy>fair</schedulingPolicy>
-    <minResources>1024 mb,1 vcores</minResources>
-    <maxResources>8192 mb,4 vcores</maxResources>
-    <maxRunningApps>50</maxRunningApps>
-    <maxAMShare>0.5</maxAMShare>
-  </queue>
-  
-  <queue name="default">
-    <weight>1.0</weight>
-    <schedulingPolicy>fair</schedulingPolicy>
-    <minResources>1024 mb,1 vcores</minResources>
-    <maxResources>8192 mb,4 vcores</maxResources>
-    <maxRunningApps>25</maxRunningApps>
-  </queue>
-  
   <userMaxAppsDefault>5</userMaxAppsDefault>
   <defaultQueueSchedulingPolicy>fair</defaultQueueSchedulingPolicy>
-  
   <queuePlacementPolicy>
     <rule name="specified"/>
     <rule name="user"/>
