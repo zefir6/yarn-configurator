@@ -6,6 +6,7 @@ import { z } from "zod";
 import multer, { FileFilterCallback } from "multer";
 import * as path from "path";
 import { parseString, Builder } from "xml2js";
+import { parseQueuesFromXML } from "./xml-utils";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -110,6 +111,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastModified: new Date().toISOString(),
             validationErrors: validation.errors ? JSON.stringify(validation.errors) : null,
           });
+          
+          // Parse and sync queues from XML if valid
+          if (validation.isValid) {
+            try {
+              const queuesFromXml = await parseQueuesFromXML(content);
+              await storage.syncQueuesFromXML(queuesFromXml);
+              console.log(`Synchronized ${queuesFromXml.length} queues from XML`);
+            } catch (parseError) {
+              console.warn("Failed to parse queues from XML:", parseError);
+            }
+          }
+          
           console.log(`Successfully loaded config from disk: ${configPath}`);
           return res.json(newConfig);
         } catch (diskError) {
@@ -153,12 +166,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validationErrors: validation.errors ? JSON.stringify(validation.errors) : null,
       });
 
-      // Save to disk if valid
+      // Save to disk and sync queues if valid
       if (validation.isValid) {
         try {
           console.log(`Writing config to disk: ${targetPath}`);
           await storage.writeConfigToDisk(targetPath, content);
           console.log(`Successfully wrote config to: ${targetPath}`);
+          
+          // Parse and sync queues from XML
+          try {
+            const queuesFromXml = await parseQueuesFromXML(content);
+            await storage.syncQueuesFromXML(queuesFromXml);
+            console.log(`Synchronized ${queuesFromXml.length} queues from saved XML`);
+          } catch (parseError) {
+            console.warn("Failed to parse queues from saved XML:", parseError);
+          }
         } catch (diskError) {
           console.error("Failed to write to disk:", diskError);
           return res.status(500).json({ 
@@ -264,6 +286,8 @@ async function validateXML(content: string): Promise<{ isValid: boolean; errors?
     });
   });
 }
+
+
 
 function generateXMLFromQueues(queues: any[]): string {
   const allocations: any = {

@@ -19,6 +19,7 @@ export interface IStorage {
   readConfigFromDisk(filePath: string): Promise<string>;
   writeConfigToDisk(filePath: string, content: string): Promise<void>;
   getDefaultXMLContent(): string;
+  syncQueuesFromXML(queues: any[]): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -214,6 +215,35 @@ export class MemStorage implements IStorage {
     } catch (error) {
       console.log(`No existing config found at ${this.defaultConfigPath}, will use defaults`);
     }
+  }
+
+  async syncQueuesFromXML(queues: any[]): Promise<void> {
+    // Clear existing queues
+    this.queues.clear();
+    this.currentQueueId = 1;
+
+    // Add queues from XML
+    queues.forEach(queue => {
+      const id = this.currentQueueId++;
+      this.queues.set(id, { 
+        ...queue, 
+        id,
+        parent: queue.parent || null,
+        weight: queue.weight || null,
+        schedulingPolicy: queue.schedulingPolicy || null,
+        minMemory: queue.minMemory || null,
+        minVcores: queue.minVcores || null,
+        maxMemory: queue.maxMemory || null,
+        maxVcores: queue.maxVcores || null,
+        maxRunningApps: queue.maxRunningApps || null,
+        maxAMShare: queue.maxAMShare || null,
+        allowPreemptionFrom: queue.allowPreemptionFrom || null,
+        allowPreemptionTo: queue.allowPreemptionTo || null,
+        reservation: queue.reservation || null
+      });
+    });
+
+    console.log(`Synchronized ${queues.length} queues to memory storage`);
   }
 
   getDefaultXMLContent(): string {
@@ -540,10 +570,53 @@ export class SqliteStorage implements IStorage {
         null
       );
       
+      // Parse and sync queues from the loaded XML
+      try {
+        const { parseQueuesFromXML } = await import('./xml-utils');
+        const queuesFromXml = await parseQueuesFromXML(content);
+        await this.syncQueuesFromXML(queuesFromXml);
+        console.log(`Synchronized ${queuesFromXml.length} queues from loaded XML`);
+      } catch (parseError) {
+        console.warn("Failed to parse queues from loaded XML:", parseError);
+      }
+      
       console.log(`Successfully loaded existing config from: ${this.defaultConfigPath}`);
     } catch (error) {
       console.log(`No existing config found at ${this.defaultConfigPath}, will use defaults`);
     }
+  }
+
+  async syncQueuesFromXML(queues: any[]): Promise<void> {
+    // Clear existing queues
+    this.sqlite.prepare('DELETE FROM queues').run();
+
+    // Add queues from XML
+    const insertQueue = this.sqlite.prepare(`
+      INSERT INTO queues (name, parent, weight, scheduling_policy, min_memory, min_vcores, 
+                         max_memory, max_vcores, max_running_apps, max_am_share, 
+                         allow_preemption_from, allow_preemption_to, reservation)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    queues.forEach(queue => {
+      insertQueue.run(
+        queue.name,
+        queue.parent,
+        queue.weight,
+        queue.schedulingPolicy,
+        queue.minMemory,
+        queue.minVcores,
+        queue.maxMemory,
+        queue.maxVcores,
+        queue.maxRunningApps,
+        queue.maxAMShare,
+        queue.allowPreemptionFrom ? 1 : 0,
+        queue.allowPreemptionTo ? 1 : 0,
+        queue.reservation
+      );
+    });
+
+    console.log(`Synchronized ${queues.length} queues to SQLite database`);
   }
 
   getDefaultXMLContent(): string {
