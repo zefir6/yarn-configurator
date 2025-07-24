@@ -325,11 +325,11 @@ The project includes a multi-stage Dockerfile that handles build dependencies co
    # Build the Docker image
    docker build -t yarn-scheduler-manager .
    
-   # Run with SQLite storage (default)
+   # Run with SQLite storage (uses dedicated Docker volume)
    docker run -d \
      --name yarn-scheduler \
      -p 5000:5000 \
-     -v $(pwd)/data:/app/data \
+     -v yarn_scheduler_data:/app/data \
      yarn-scheduler-manager
    
    # Run with Hadoop configuration volume
@@ -337,7 +337,7 @@ The project includes a multi-stage Dockerfile that handles build dependencies co
      --name yarn-scheduler \
      -p 5000:5000 \
      -v /etc/hadoop/conf:/etc/hadoop/conf:ro \
-     -v $(pwd)/data:/app/data \
+     -v yarn_scheduler_data:/app/data \
      yarn-scheduler-manager
    ```
 
@@ -385,7 +385,7 @@ The project includes a multi-stage Dockerfile that handles build dependencies co
    For custom Hadoop paths, edit `docker-compose.yml`:
    ```yaml
    volumes:
-     - ./data:/app/data
+     - yarn_scheduler_data:/app/data  # Dedicated Docker volume
      - /custom/hadoop/conf:/custom/hadoop/conf:rw  # Custom path
    environment:
      - FAIR_SCHEDULER_XML_PATH=/custom/hadoop/conf/fair-scheduler.xml
@@ -414,7 +414,7 @@ For the fastest Docker deployment:
 git clone <repository-url>
 cd yarn-fair-scheduler-manager
 
-# 2. Start with Docker Compose (recommended)
+# 2. Start with Docker Compose (recommended) - uses dedicated Docker volume
 docker-compose up -d
 
 # 3. Check if it's running
@@ -435,6 +435,31 @@ docker-compose down
 - **`Dockerfile`** - Multi-stage build with native module compilation
 - **`.dockerignore`** - Optimized build context
 - **`.env.example`** - Environment variable template
+
+## Docker Volume Management
+
+The application uses dedicated Docker volumes for data storage instead of repository subdirectories:
+
+- **Data Volume**: `yarn_scheduler_data` stores SQLite database and application data
+- **Configuration Volume**: Host system `/etc/hadoop/conf` mounted read-write for configuration files
+
+**Volume Commands:**
+```bash
+# List Docker volumes
+docker volume ls
+
+# Inspect volume details
+docker volume inspect yarn_scheduler_data
+
+# Backup volume data
+docker run --rm -v yarn_scheduler_data:/data -v $(pwd):/backup alpine tar czf /backup/yarn-data-backup.tar.gz /data
+
+# Restore volume data
+docker run --rm -v yarn_scheduler_data:/data -v $(pwd):/backup alpine tar xzf /backup/yarn-data-backup.tar.gz -C /
+
+# Remove volume (WARNING: This will delete all data)
+docker volume rm yarn_scheduler_data
+```
 
 ## File System Integration
 

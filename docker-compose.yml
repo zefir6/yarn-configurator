@@ -7,7 +7,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./data:/app/data
+      - yarn_scheduler_data:/app/data
       # Mount Hadoop configuration as read-write by default
       - /etc/hadoop/conf:/etc/hadoop/conf:rw
     environment:
@@ -47,6 +47,7 @@ networks:
   yarn-scheduler-network:
     driver: bridge
 
-# volumes: 
+volumes:
+  yarn_scheduler_data:
   # Uncomment if using PostgreSQL
   # postgres_data:

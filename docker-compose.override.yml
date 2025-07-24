@@ -15,7 +15,7 @@ services:
       - ./server:/app/server
       - ./client:/app/client
       - ./shared:/app/shared
-      - ./data:/app/data
+      - yarn_scheduler_data:/app/data
     environment:
       - NODE_ENV=development
     command: npm run dev

@@ -110,7 +110,7 @@ The application follows a monorepo structure with clear separation of concerns:
 - Uses environment variables for database connection
 - Supports both development and production modes
 - Docker containerization with multi-stage builds
-- SQLite default storage with persistent volumes
+- SQLite default storage with dedicated Docker volumes (not repository subdirectories)
 - Configurable fair-scheduler.xml placement (default: /etc/hadoop/conf/fair-scheduler.xml)
 - Read-write access to /etc/hadoop/conf by default in Docker
 
