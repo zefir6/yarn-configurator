@@ -22,21 +22,94 @@ A comprehensive web-based GUI tool for managing Hadoop YARN Fair Scheduler confi
 - **Form Handling**: React Hook Form with Zod validation
 - **File Processing**: XML parsing and generation with xml2js
 
-## Prerequisites
+## System Requirements
 
-- Node.js 20 or higher
-- npm or yarn package manager
-- Optional: PostgreSQL database (uses SQLite by default)
-- Optional: Hadoop installation for direct file system integration
+### Required Software Versions
+
+| Software | Minimum Version | Recommended | Notes |
+|----------|----------------|-------------|-------|
+| **Node.js** | 18.0.0 | 20.x LTS | Required for ES modules and modern JavaScript features |
+| **npm** | 8.0.0 | 10.x | Package manager (comes with Node.js) |
+| **Operating System** | - | Linux/macOS/Windows | Cross-platform compatible |
+
+### Optional Dependencies
+
+| Software | Version | Purpose |
+|----------|---------|---------|
+| **PostgreSQL** | 12+ | Alternative database (SQLite used by default) |
+| **Hadoop** | 2.7+ / 3.x | Direct file system integration |
+| **Docker** | 20+ | Containerized deployment |
+
+### Hardware Requirements
+
+- **RAM**: Minimum 512MB, Recommended 2GB+
+- **Storage**: 100MB for application, additional space for SQLite database
+- **CPU**: Any modern x64 or ARM64 processor
+
+### Browser Compatibility
+
+| Browser | Minimum Version |
+|---------|----------------|
+| **Chrome** | 90+ |
+| **Firefox** | 88+ |
+| **Safari** | 14+ |
+| **Edge** | 90+ |
+
+### Version Verification
+
+Check your installed versions:
+
+```bash
+# Check Node.js version
+node --version
+
+# Check npm version
+npm --version
+
+# Check if you have the minimum required versions
+node -e "console.log(process.version >= 'v18.0.0' ? '✓ Node.js OK' : '✗ Node.js too old')"
+```
 
 ## Quick Start
 
-### 1. Clone and Install
+### 1. Prerequisites Check and Installation
 
 ```bash
+# 1. Verify Node.js version (18.0.0+ required)
+node --version
+
+# 2. Clone the repository
 git clone <repository-url>
 cd yarn-fair-scheduler-manager
+
+# 3. Install dependencies
 npm install
+
+# 4. Verify installation
+npm ls better-sqlite3  # Should show SQLite dependency
+
+# 5. Optional: Use Node Version Manager
+# If you have nvm installed, the project includes .nvmrc
+nvm use  # Uses Node.js version specified in .nvmrc
+```
+
+### Node.js Version Management
+
+The project includes version specification files for different Node.js version managers:
+
+- **`.nvmrc`** - For nvm (Node Version Manager)
+- **`.node-version`** - For nodenv and other version managers
+
+```bash
+# Using nvm (recommended)
+nvm use         # Uses version from .nvmrc
+nvm install     # Installs the specified version if needed
+
+# Using nodenv
+nodenv local    # Uses version from .node-version
+
+# Verify you're using the correct version
+node --version  # Should show v20.19.3 or compatible
 ```
 
 ### 2. Environment Configuration
@@ -124,16 +197,77 @@ HOST=192.168.1.100  # Bind to specific interface
 PORT=8080           # Custom port
 ```
 
+## Troubleshooting
+
+### Common Installation Issues
+
+#### Node.js Version Too Old
+```bash
+# Error: "SyntaxError: Unexpected token 'import'"
+# Solution: Upgrade to Node.js 18+ or 20+ LTS
+
+# Using Node Version Manager (nvm)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+```
+
+#### SQLite Installation Issues
+```bash
+# Error: "Cannot find module 'better-sqlite3'"
+# Solution: Rebuild native dependencies
+
+npm rebuild better-sqlite3
+# or on Alpine Linux/Docker
+apk add python3 make g++
+npm install
+```
+
+#### Permission Issues
+```bash
+# Error: "EACCES: permission denied"
+# Solution: Fix npm permissions or use different directory
+
+mkdir ~/.npm-global
+npm config set prefix '~/.npm-global'
+export PATH=~/.npm-global/bin:$PATH
+```
+
+### Platform-Specific Notes
+
+#### Windows
+- Requires Visual Studio Build Tools or Visual Studio Community
+- PowerShell or Command Prompt supported
+- WSL2 recommended for better compatibility
+
+#### macOS
+- Xcode Command Line Tools required: `xcode-select --install`
+- Homebrew recommended for Node.js installation
+
+#### Linux
+- Build essentials required: `apt-get install build-essential` (Ubuntu/Debian)
+- Python 3 required for native module compilation
+
 ## Deployment Instructions
 
 ### Local Development Deployment
 
-1. **Install Dependencies**:
+1. **System Prerequisites**:
    ```bash
-   npm install
+   # Ensure Node.js 18+ is installed
+   node --version  # Should show v18.0.0 or higher
+   npm --version   # Should show 8.0.0 or higher
    ```
 
-2. **Start Development Server**:
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   # Verify critical dependencies
+   npm ls better-sqlite3 drizzle-orm
+   ```
+
+3. **Start Development Server**:
    ```bash
    npm run dev
    ```

@@ -74,6 +74,11 @@ The application follows a monorepo structure with clear separation of concerns:
 
 ## External Dependencies
 
+### Runtime Requirements
+- **Node.js**: 18.0.0+ (recommended: 20.x LTS)
+- **npm**: 8.0.0+ (package manager)
+- **better-sqlite3**: Native SQLite bindings (requires compilation)
+
 ### Core Dependencies
 - **@neondatabase/serverless** - Neon database client for PostgreSQL
 - **drizzle-orm** - TypeScript ORM for database operations
@@ -81,6 +86,7 @@ The application follows a monorepo structure with clear separation of concerns:
 - **@hookform/resolvers** - Form validation integration
 - **xml2js** - XML parsing and generation
 - **multer** - File upload handling
+- **better-sqlite3** - SQLite database driver (default storage)
 
 ### UI Dependencies
 - **@radix-ui/** - Headless UI component primitives
