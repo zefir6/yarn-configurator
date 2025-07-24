@@ -125,8 +125,8 @@ SQLITE_DB_PATH=./data/yarn-scheduler.db  # Path for SQLite database file
 DATABASE_URL=postgresql://username:password@localhost:5432/yarn_config
 
 # Hadoop Configuration (Optional)
-HADOOP_CONF_DIR=/etc/hadoop/conf
-FAIR_SCHEDULER_XML_PATH=/etc/hadoop/conf/fair-scheduler.xml  # Custom path for fair-scheduler.xml
+# Default path: /etc/hadoop/conf/fair-scheduler.xml
+FAIR_SCHEDULER_XML_PATH=/etc/hadoop/conf/fair-scheduler.xml
 
 # Server Configuration (Optional)
 PORT=5000                        # Application port
@@ -365,12 +365,11 @@ The project includes a multi-stage Dockerfile that handles build dependencies co
    **Configuration Options:**
    
    ```bash
-   # Custom Hadoop configuration directory
+   # Custom fair-scheduler.xml location
    docker-compose up -d \
-     -e HADOOP_CONF_DIR=/custom/hadoop/conf \
      -e FAIR_SCHEDULER_XML_PATH=/custom/hadoop/conf/fair-scheduler.xml
    
-   # Custom fair-scheduler.xml location only
+   # Alternative location example
    docker-compose up -d \
      -e FAIR_SCHEDULER_XML_PATH=/opt/hadoop/etc/fair-scheduler.xml
    
@@ -389,7 +388,6 @@ The project includes a multi-stage Dockerfile that handles build dependencies co
      - ./data:/app/data
      - /custom/hadoop/conf:/custom/hadoop/conf:rw  # Custom path
    environment:
-     - HADOOP_CONF_DIR=/custom/hadoop/conf
      - FAIR_SCHEDULER_XML_PATH=/custom/hadoop/conf/fair-scheduler.xml
    ```
 
@@ -452,7 +450,7 @@ The application automatically integrates with your Hadoop file system:
 # Application automatically reads from:
 /etc/hadoop/conf/fair-scheduler.xml  # Default location
 
-# Or from custom path via environment variable:
+# Or from custom path via environment variable (default: /etc/hadoop/conf/fair-scheduler.xml):
 FAIR_SCHEDULER_XML_PATH=/custom/path/fair-scheduler.xml
 
 # All changes made through the web interface are immediately written to disk

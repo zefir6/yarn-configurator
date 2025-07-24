@@ -33,10 +33,7 @@ export class MemStorage implements IStorage {
     this.configFiles = new Map();
     this.currentQueueId = 1;
     this.currentConfigId = 1;
-    this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || 
-      (process.env.HADOOP_CONF_DIR 
-        ? path.join(process.env.HADOOP_CONF_DIR, 'fair-scheduler.xml')
-        : '/etc/hadoop/conf/fair-scheduler.xml');
+    this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || '/etc/hadoop/conf/fair-scheduler.xml';
     
     // Initialize with default queues
     this.initializeDefaultQueues();
@@ -276,10 +273,7 @@ export class SqliteStorage implements IStorage {
 
     this.sqlite = new Database(dbPath);
     this.db = drizzle(this.sqlite);
-    this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || 
-      (process.env.HADOOP_CONF_DIR 
-        ? path.join(process.env.HADOOP_CONF_DIR, 'fair-scheduler.xml')
-        : '/etc/hadoop/conf/fair-scheduler.xml');
+    this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || '/etc/hadoop/conf/fair-scheduler.xml';
     
     this.initializeDatabase();
     

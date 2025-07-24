@@ -96,10 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const configFile = await storage.getConfigFile();
       if (!configFile) {
         // Try to read from configured path
-        const configPath = process.env.FAIR_SCHEDULER_XML_PATH || 
-          (process.env.HADOOP_CONF_DIR 
-            ? path.join(process.env.HADOOP_CONF_DIR, 'fair-scheduler.xml')
-            : '/etc/hadoop/conf/fair-scheduler.xml');
+        const configPath = process.env.FAIR_SCHEDULER_XML_PATH || '/etc/hadoop/conf/fair-scheduler.xml';
         
         try {
           console.log(`Attempting to read config from: ${configPath}`);
@@ -142,10 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { content, filePath } = req.body;
       
       // Use configured path if no filePath provided
-      const targetPath = filePath || process.env.FAIR_SCHEDULER_XML_PATH || 
-        (process.env.HADOOP_CONF_DIR 
-          ? path.join(process.env.HADOOP_CONF_DIR, 'fair-scheduler.xml')
-          : '/etc/hadoop/conf/fair-scheduler.xml');
+      const targetPath = filePath || process.env.FAIR_SCHEDULER_XML_PATH || '/etc/hadoop/conf/fair-scheduler.xml';
       
       // Validate XML
       const validation = await validateXML(content);
