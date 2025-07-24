@@ -49,6 +49,11 @@ export class MemStorage implements IStorage {
     // Initialize with default queues
     this.initializeDefaultQueues();
     
+    // Save initial synced state
+    this.queues.forEach((queue, id) => {
+      this.lastSyncedState.set(id, { ...queue });
+    });
+    
     // Try to load existing config from disk
     this.loadConfigFromDisk();
   }
@@ -777,15 +782,16 @@ export class SqliteStorage implements IStorage {
 
 // Factory function to create storage instance based on environment
 function createStorage(): IStorage {
-  const storageType = process.env.STORAGE_TYPE || 'sqlite';
+  const storageType = process.env.STORAGE_TYPE || 'memory';
   
   if (storageType === 'sqlite') {
     const dbPath = process.env.SQLITE_DB_PATH || './data/yarn-scheduler.db';
     return new SqliteStorage(dbPath);
   } else {
-    // Default to in-memory storage
+    // Default to in-memory storage with pending changes support
     return new MemStorage();
   }
 }
 
-export const storage = createStorage();
+// Force memory storage for pending changes functionality
+export const storage = new MemStorage();
