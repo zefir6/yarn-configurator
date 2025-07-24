@@ -20,6 +20,12 @@ export interface IStorage {
   writeConfigToDisk(filePath: string, content: string): Promise<void>;
   getDefaultXMLContent(): string;
   syncQueuesFromXML(queues: any[]): Promise<void>;
+  
+  // Pending changes operations
+  getPendingChangesCount(): Promise<number>;
+  hasPendingChanges(): Promise<boolean>;
+  applyPendingChanges(): Promise<void>;
+  discardPendingChanges(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -28,6 +34,8 @@ export class MemStorage implements IStorage {
   private currentQueueId: number;
   private currentConfigId: number;
   private defaultConfigPath: string;
+  private pendingChanges: Set<number>;
+  private lastSyncedState: Map<number, Queue>;
 
   constructor() {
     this.queues = new Map();
@@ -35,6 +43,8 @@ export class MemStorage implements IStorage {
     this.currentQueueId = 1;
     this.currentConfigId = 1;
     this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || '/etc/hadoop/conf/fair-scheduler.xml';
+    this.pendingChanges = new Set();
+    this.lastSyncedState = new Map();
     
     // Initialize with default queues
     this.initializeDefaultQueues();
@@ -137,6 +147,7 @@ export class MemStorage implements IStorage {
       reservation: insertQueue.reservation ?? null
     };
     this.queues.set(id, queue);
+    this.pendingChanges.add(id);
     return queue;
   }
 
@@ -146,11 +157,16 @@ export class MemStorage implements IStorage {
     
     const updatedQueue: Queue = { ...existingQueue, ...updateData };
     this.queues.set(id, updatedQueue);
+    this.pendingChanges.add(id);
     return updatedQueue;
   }
 
   async deleteQueue(id: number): Promise<boolean> {
-    return this.queues.delete(id);
+    const deleted = this.queues.delete(id);
+    if (deleted) {
+      this.pendingChanges.add(id);
+    }
+    return deleted;
   }
 
   async getConfigFile(): Promise<ConfigFile | undefined> {
@@ -295,6 +311,63 @@ export class MemStorage implements IStorage {
     <rule name="default" queue="default"/>
   </queuePlacementPolicy>
 </allocations>`;
+  }
+  async getPendingChangesCount(): Promise<number> {
+    return this.pendingChanges.size;
+  }
+
+  async hasPendingChanges(): Promise<boolean> {
+    return this.pendingChanges.size > 0;
+  }
+
+  async applyPendingChanges(): Promise<void> {
+    if (this.pendingChanges.size === 0) return;
+
+    try {
+      // Regenerate and save XML from current queues
+      const allQueues = Array.from(this.queues.values());
+      const { generateXMLFromQueues } = await import('./xml-utils');
+      const xmlContent = generateXMLFromQueues(allQueues);
+      
+      // Update config file with regenerated XML
+      const configFile = await this.getConfigFile();
+      if (configFile) {
+        await this.saveConfigFile({
+          filePath: configFile.filePath,
+          content: xmlContent,
+          isValid: true,
+          lastModified: new Date().toISOString(),
+          validationErrors: null,
+        });
+        
+        // Write to disk
+        await this.writeConfigToDisk(configFile.filePath, xmlContent);
+        console.log(`Applied ${this.pendingChanges.size} pending changes to XML file`);
+      }
+
+      // Clear pending changes and update synced state
+      this.pendingChanges.clear();
+      this.lastSyncedState.clear();
+      this.queues.forEach((queue, id) => {
+        this.lastSyncedState.set(id, { ...queue });
+      });
+      
+    } catch (error) {
+      console.error('Failed to apply pending changes:', error);
+      throw error;
+    }
+  }
+
+  async discardPendingChanges(): Promise<void> {
+    // Restore queues to last synced state
+    this.queues.clear();
+    this.lastSyncedState.forEach((queue, id) => {
+      this.queues.set(id, { ...queue });
+    });
+    
+    // Clear pending changes
+    this.pendingChanges.clear();
+    console.log('Discarded all pending changes');
   }
 }
 
@@ -678,6 +751,23 @@ export class SqliteStorage implements IStorage {
     <rule name="default" queue="default"/>
   </queuePlacementPolicy>
 </allocations>`;
+  }
+
+  async getPendingChangesCount(): Promise<number> {
+    // For SQLite, we'll implement instant write mode (no pending changes)
+    return 0;
+  }
+
+  async hasPendingChanges(): Promise<boolean> {
+    return false;
+  }
+
+  async applyPendingChanges(): Promise<void> {
+    // Nothing to do - changes are applied instantly in SQLite mode
+  }
+
+  async discardPendingChanges(): Promise<void> {
+    // Nothing to do - no pending changes in SQLite mode  
   }
 
   close() {

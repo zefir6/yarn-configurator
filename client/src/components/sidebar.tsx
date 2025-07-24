@@ -36,6 +36,12 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     queryKey: ["/api/config"],
   });
 
+  // Get pending changes
+  const { data: pendingChanges } = useQuery<{count: number, hasPending: boolean}>({
+    queryKey: ["/api/pending-changes"],
+    refetchInterval: 2000, // Poll every 2 seconds for updates
+  });
+
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -82,6 +88,53 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       toast({
         title: "Error",
         description: "Failed to reload configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Apply changes mutation
+  const applyChangesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/pending-changes/apply');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pending-changes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/queues"] });
+      toast({
+        title: "Success",
+        description: "Changes applied successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to apply changes",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Discard changes mutation
+  const discardChangesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/pending-changes/discard');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pending-changes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/queues"] });
+      toast({
+        title: "Success",
+        description: "Changes discarded successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to discard changes",
         variant: "destructive",
       });
     },
@@ -152,15 +205,15 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className="bg-carbon-gray-10 rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-carbon-gray-70">Current Config</span>
-            <Badge variant={config?.isValid ? "default" : "destructive"} className="text-xs">
-              {config?.isValid ? "Valid" : "Invalid"}
+            <Badge variant={(config as any)?.isValid ? "default" : "destructive"} className="text-xs">
+              {(config as any)?.isValid ? "Valid" : "Invalid"}
             </Badge>
           </div>
           <p className="text-xs text-carbon-gray-50">
-            {config?.filePath || "/etc/hadoop/conf/fair-scheduler.xml"}
+            {(config as any)?.filePath || "/etc/hadoop/conf/fair-scheduler.xml"}
           </p>
           <p className="text-xs text-carbon-gray-50 mt-1">
-            {config?.lastModified ? `Last modified: ${new Date(config.lastModified).toLocaleString()}` : "No modification date"}
+            {(config as any)?.lastModified ? `Last modified: ${new Date((config as any).lastModified).toLocaleString()}` : "No modification date"}
           </p>
         </div>
 
@@ -239,19 +292,44 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       <div className="p-6 border-t border-gray-200 bg-carbon-gray-10">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-carbon-gray-70">Pending Changes</span>
-          <Badge variant="secondary" className="bg-carbon-warning text-carbon-gray-70">
-            0 Modified
+          <Badge 
+            variant={pendingChanges?.hasPending ? "default" : "secondary"} 
+            className={pendingChanges?.hasPending ? "bg-carbon-warning text-carbon-gray-70" : "bg-gray-200 text-carbon-gray-70"}
+          >
+            {pendingChanges?.count || 0} Modified
           </Badge>
         </div>
         <div className="space-y-2">
-          <Button variant="outline" size="sm" className="w-full">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full"
+            disabled={!pendingChanges?.hasPending}
+            onClick={() => onTabChange('xml-editor')}
+          >
             <Eye className="w-4 h-4 mr-2" />
             Preview Changes
           </Button>
-          <Button size="sm" className="w-full bg-carbon-success hover:bg-green-700">
+          <Button 
+            size="sm" 
+            className="w-full bg-carbon-success hover:bg-green-700"
+            disabled={!pendingChanges?.hasPending || applyChangesMutation.isPending}
+            onClick={() => applyChangesMutation.mutate()}
+          >
             <Save className="w-4 h-4 mr-2" />
-            Apply Changes
+            {applyChangesMutation.isPending ? "Applying..." : "Apply Changes"}
           </Button>
+          {pendingChanges?.hasPending && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-red-600 border-red-200 hover:bg-red-50"
+              disabled={discardChangesMutation.isPending}
+              onClick={() => discardChangesMutation.mutate()}
+            >
+              {discardChangesMutation.isPending ? "Discarding..." : "Discard Changes"}
+            </Button>
+          )}
         </div>
       </div>
     </div>
