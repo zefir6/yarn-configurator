@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { formatEuropeanDateTime } from "@/lib/date-utils";
 import { YarnSummary } from "@/components/yarn-summary";
-import type { Queue } from "@shared/schema";
+import type { Queue, QueueMetrics } from "@shared/schema";
 
 interface OverviewProps {
   onEditQueue?: (queueId: number) => void;
@@ -30,6 +30,12 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
 
   const { data: queues = [], isLoading } = useQuery<Queue[]>({
     queryKey: ["/api/queues"],
+  });
+
+  const { data: queueMetrics = [] } = useQuery<QueueMetrics[]>({
+    queryKey: ["/api/yarn/queue-metrics"],
+    refetchInterval: 30000,
+    retry: false,
   });
 
   const { data: config } = useQuery<{
@@ -58,6 +64,10 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
 
   const getRootQueues = () => {
     return queues.filter(q => q.parent === "root" && q.name !== "root");
+  };
+
+  const getQueueMetrics = (queueName: string): QueueMetrics | undefined => {
+    return queueMetrics.find(m => m.queueName === queueName);
   };
 
   const handleViewQueue = (queue: Queue) => {
@@ -158,55 +168,7 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
         </Card>
       </div>
 
-      {/* Configuration Status */}
-      <Card className="border border-gray-200 shadow-sm">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="text-lg font-medium text-carbon-gray-70">Configuration Status</CardTitle>
-          <p className="text-sm text-carbon-gray-50 mt-1">
-            Current fair-scheduler.xml configuration status
-          </p>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-carbon-gray-70 mb-2">File Location</h4>
-              <p className="text-sm text-carbon-gray-50">
-                {config?.filePath || "/etc/hadoop/conf/fair-scheduler.xml"}
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium text-carbon-gray-70 mb-2">Last Modified</h4>
-              <p className="text-sm text-carbon-gray-50">
-                {config?.lastModified ? formatEuropeanDateTime(config.lastModified) : "Unknown"}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Recent Activity */}
-      <Card className="border border-gray-200 shadow-sm">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="text-lg font-medium text-carbon-gray-70">Recent Activity</CardTitle>
-          <p className="text-sm text-carbon-gray-50 mt-1">
-            Latest configuration changes and updates
-          </p>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-carbon-gray-70">Configuration loaded from disk</span>
-              <span className="text-xs text-carbon-gray-50">
-                {config?.lastModified ? formatEuropeanDateTime(config.lastModified) : "Recently"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-carbon-gray-70">Queue hierarchy validated</span>
-              <span className="text-xs text-carbon-gray-50">Recently</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Queue Hierarchy Visualization */}
       <Card className="border border-gray-200 shadow-sm">
@@ -231,43 +193,61 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
 
             {/* Child Queues */}
             <div className="ml-6 space-y-3">
-              {getRootQueues().map((queue) => (
-                <div
-                  key={queue.id}
-                  className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Folder className="text-carbon-blue w-5 h-5" />
-                    <span className="font-medium text-carbon-gray-70">{queue.name}</span>
-                    <Badge variant="secondary" className="bg-blue-100 text-carbon-blue">
-                      Weight: {queue.weight}
-                    </Badge>
-                    {(queue.maxMemory || queue.maxVcores) && (
-                      <Badge variant="secondary" className="bg-green-100 text-carbon-success">
-                        Max: {queue.maxMemory ? formatMemory(queue.maxMemory) : "∞"}, {queue.maxVcores || "∞"} vCores
+              {getRootQueues().map((queue) => {
+                const metrics = getQueueMetrics(queue.name);
+                return (
+                  <div
+                    key={queue.id}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Folder className="text-carbon-blue w-5 h-5" />
+                      <span className="font-medium text-carbon-gray-70">{queue.name}</span>
+                      <Badge variant="secondary" className="bg-blue-100 text-carbon-blue">
+                        Weight: {queue.weight}
                       </Badge>
-                    )}
+                      {metrics && (
+                        <>
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                            Used: {Math.round(metrics.usedCapacity)}%
+                          </Badge>
+                          <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                            Apps: {metrics.numApplications}
+                          </Badge>
+                          {metrics.resourcesUsed && (metrics.resourcesUsed.memory > 0 || metrics.resourcesUsed.vCores > 0) && (
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                              {formatMemory(metrics.resourcesUsed.memory)}, {metrics.resourcesUsed.vCores} vCores
+                            </Badge>
+                          )}
+                        </>
+                      )}
+                      {(queue.maxMemory || queue.maxVcores) && (
+                        <Badge variant="secondary" className="bg-green-100 text-carbon-success">
+                          Max: {queue.maxMemory ? formatMemory(queue.maxMemory) : "∞"}, {queue.maxVcores || "∞"} vCores
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleViewQueue(queue)}
+                        title="View queue details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditQueue(queue)}
+                        title="Edit queue configuration"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleViewQueue(queue)}
-                      title="View queue details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleEditQueue(queue)}
-                      title="Edit queue configuration"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </CardContent>
