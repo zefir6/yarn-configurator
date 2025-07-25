@@ -206,7 +206,7 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
                       <Badge variant="secondary" className="bg-blue-100 text-carbon-blue">
                         Weight: {queue.weight}
                       </Badge>
-                      {metrics && (
+                      {metrics ? (
                         <>
                           <Badge variant="secondary" className="bg-orange-100 text-orange-700">
                             Used: {Math.round(metrics.usedCapacity)}%
@@ -220,6 +220,10 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
                             </Badge>
                           )}
                         </>
+                      ) : (
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                          YARN: Disconnected
+                        </Badge>
                       )}
                       {(queue.maxMemory || queue.maxVcores) && (
                         <Badge variant="secondary" className="bg-green-100 text-carbon-success">

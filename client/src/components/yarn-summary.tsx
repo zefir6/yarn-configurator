@@ -30,9 +30,31 @@ export function YarnSummary() {
     return Math.round((used / total) * 100);
   };
 
-  // If YARN integration is disabled, don't show anything
+  // If YARN integration is disabled, show a notice
   if (clusterError && queueError) {
-    return null;
+    return (
+      <Card className="border border-yellow-200 bg-yellow-50 shadow-sm">
+        <CardHeader className="border-b border-yellow-200">
+          <CardTitle className="text-lg font-medium text-yellow-800 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            YARN Integration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-yellow-700 mb-1">YARN Resource Manager not connected</p>
+              <p className="text-xs text-yellow-600">
+                Configure YARN connection in Settings to view live cluster metrics and queue utilization
+              </p>
+            </div>
+            <Badge variant="secondary" className="bg-yellow-200 text-yellow-800">
+              Disconnected
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
