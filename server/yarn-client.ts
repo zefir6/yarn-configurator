@@ -123,15 +123,25 @@ export class YarnResourceManagerClient {
   private extractAllQueues(schedulerInfo: any): QueueMetrics[] {
     const queues: QueueMetrics[] = [];
     
-    // Add current queue if it has metrics
-    if (schedulerInfo.queueName) {
+    if (!schedulerInfo) {
+      return queues;
+    }
+    
+    // Add current queue if it has a valid queueName
+    if (schedulerInfo.queueName || schedulerInfo.name) {
       queues.push(this.formatQueueMetrics(schedulerInfo));
     }
 
     // Recursively add child queues
     if (schedulerInfo.queues?.queue) {
-      for (const childQueue of schedulerInfo.queues.queue) {
-        queues.push(...this.extractAllQueues(childQueue));
+      const childQueues = Array.isArray(schedulerInfo.queues.queue) 
+        ? schedulerInfo.queues.queue 
+        : [schedulerInfo.queues.queue];
+        
+      for (const childQueue of childQueues) {
+        if (childQueue) {
+          queues.push(...this.extractAllQueues(childQueue));
+        }
       }
     }
 
@@ -139,17 +149,21 @@ export class YarnResourceManagerClient {
   }
 
   private formatQueueMetrics(queueData: any): QueueMetrics {
+    if (!queueData) {
+      throw new Error('Queue data is undefined or null');
+    }
+    
     return {
-      queueName: queueData.queueName || '',
-      capacity: queueData.capacity || 0,
-      usedCapacity: queueData.usedCapacity || 0,
-      maxCapacity: queueData.maxCapacity || 0,
-      absoluteCapacity: queueData.absoluteCapacity,
-      absoluteUsedCapacity: queueData.absoluteUsedCapacity,
-      numApplications: queueData.numApplications || 0,
+      queueName: queueData.queueName || queueData.name || 'unknown',
+      capacity: parseFloat(queueData.capacity) || 0,
+      usedCapacity: parseFloat(queueData.usedCapacity) || 0,
+      maxCapacity: parseFloat(queueData.maxCapacity) || 0,
+      absoluteCapacity: parseFloat(queueData.absoluteCapacity) || 0,
+      absoluteUsedCapacity: parseFloat(queueData.absoluteUsedCapacity) || 0,
+      numApplications: parseInt(queueData.numApplications) || 0,
       resourcesUsed: {
-        memory: queueData.resourcesUsed?.memory || 0,
-        vCores: queueData.resourcesUsed?.vCores || 0,
+        memory: parseInt(queueData.resourcesUsed?.memory) || 0,
+        vCores: parseInt(queueData.resourcesUsed?.vCores) || 0,
       },
       queues: queueData.queues ? {
         queue: queueData.queues.queue?.map((q: any) => this.formatQueueMetrics(q)) || []

@@ -16,6 +16,7 @@ import {
   Eye
 } from "lucide-react";
 import { formatEuropeanDateTime } from "@/lib/date-utils";
+import { YarnSummary } from "@/components/yarn-summary";
 import type { Queue } from "@shared/schema";
 
 interface OverviewProps {
@@ -91,6 +92,9 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
 
   return (
     <div className="space-y-8">
+      {/* YARN Summary */}
+      <YarnSummary />
+      
       {/* Configuration Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border border-gray-200 shadow-sm">
