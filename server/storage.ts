@@ -70,6 +70,9 @@ export class MemStorage implements IStorage {
     
     // Try to load existing config from disk first, then initialize
     this.loadConfigFromDisk();
+    
+    // Try to auto-configure YARN connection
+    this.autoConfigureYarnConnection();
   }
 
   private initializeDefaultQueues() {
@@ -460,6 +463,25 @@ export class MemStorage implements IStorage {
   async updateYarnConnection(connection: Partial<YarnConnection>): Promise<YarnConnection> {
     this.yarnConnection = { ...this.yarnConnection, ...connection };
     return { ...this.yarnConnection };
+  }
+
+  private async autoConfigureYarnConnection(): Promise<void> {
+    try {
+      const { autoConfigureYarn } = await import('./hadoop-config');
+      const autoConfig = await autoConfigureYarn();
+      
+      if (autoConfig) {
+        console.log(`Auto-configured YARN: ${autoConfig.host}:${autoConfig.port}`);
+        this.yarnConnection.resourceManagerHost = autoConfig.host;
+        this.yarnConnection.resourceManagerPort = autoConfig.port;
+        this.yarnConnection.enabled = true;
+        console.log('YARN auto-configuration successful');
+      } else {
+        console.log('No YARN configuration found, using defaults');
+      }
+    } catch (error) {
+      console.log('YARN auto-configuration failed:', error);
+    }
   }
 
   async reloadFromDisk(): Promise<void> {
