@@ -99,7 +99,8 @@ export async function parseQueuesFromXML(content: string): Promise<any[]> {
 
 export function generateXMLFromQueues(queues: any[]): string {
   // FORCE DEBUG OUTPUT TO CONSOLE
-  console.log('>>> XML GENERATION FUNCTION CALLED WITH', queues.length, 'QUEUES <<<');
+  console.log('>>> XML-UTILS generateXMLFromQueues called with', queues.length, 'queues');
+  console.log('Queue allowPreemptionFrom values:', queues.map(q => ({ name: q.name, allowPreemptionFrom: q.allowPreemptionFrom })));
   
   let xml = '<?xml version="1.0"?>\n<allocations>\n';
   
@@ -159,20 +160,41 @@ export function generateXMLFromQueues(queues: any[]): string {
         queueXml += `${indent}  <maxAMShare>${queue.maxAMShare}</maxAMShare>\n`;
       }
       
-      if (queue.allowPreemptionFrom === true) {
-        queueXml += `${indent}  <allowPreemptionFrom>true</allowPreemptionFrom>\n`;
+      // Preemption settings (always include explicit value for allowPreemptionFrom)
+      const allowPreemptionFrom = queue.allowPreemptionFrom !== null ? queue.allowPreemptionFrom : false;
+      queueXml += `${indent}  <allowPreemptionFrom>${allowPreemptionFrom ? 'true' : 'false'}</allowPreemptionFrom>\n`;
+      
+      // Only include allowPreemptionTo if explicitly set
+      if (queue.allowPreemptionTo !== null && queue.allowPreemptionTo !== undefined) {
+        queueXml += `${indent}  <allowPreemptionTo>${queue.allowPreemptionTo ? 'true' : 'false'}</allowPreemptionTo>\n`;
       }
       
-      if (queue.allowPreemptionTo === true) {
-        queueXml += `${indent}  <allowPreemptionTo>true</allowPreemptionTo>\n`;
+      // ACL settings (provide defaults if not specified)
+      const aclSubmitApps = queue.aclSubmitApps || "*";
+      const aclAdministerApps = queue.aclAdministerApps || "*";
+      
+      // Only include ACLs if they're not the default "*" value
+      if (aclSubmitApps && aclSubmitApps !== "*") {
+        queueXml += `${indent}  <aclSubmitApps>${aclSubmitApps}</aclSubmitApps>\n`;
+      }
+      if (aclAdministerApps && aclAdministerApps !== "*") {
+        queueXml += `${indent}  <aclAdministerApps>${aclAdministerApps}</aclAdministerApps>\n`;
       }
     } else {
-      // For root queue, add minimal properties if needed
+      // For root queue, add properties
       if (queue.weight && queue.weight !== 1) {
         queueXml += `${indent}  <weight>${queue.weight}</weight>\n`;
       }
-      if (queue.schedulingPolicy && queue.schedulingPolicy !== 'fair') {
+      if (queue.schedulingPolicy) {
         queueXml += `${indent}  <schedulingPolicy>${queue.schedulingPolicy}</schedulingPolicy>\n`;
+      }
+      
+      // Preemption settings for root queue too
+      const allowPreemptionFrom = queue.allowPreemptionFrom !== null ? queue.allowPreemptionFrom : false;
+      queueXml += `${indent}  <allowPreemptionFrom>${allowPreemptionFrom ? 'true' : 'false'}</allowPreemptionFrom>\n`;
+      
+      if (queue.allowPreemptionTo !== null && queue.allowPreemptionTo !== undefined) {
+        queueXml += `${indent}  <allowPreemptionTo>${queue.allowPreemptionTo ? 'true' : 'false'}</allowPreemptionTo>\n`;
       }
     }
     

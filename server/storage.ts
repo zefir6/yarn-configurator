@@ -55,6 +55,8 @@ export class MemStorage implements IStorage {
         parent: null,
         weight: 1.0,
         schedulingPolicy: "fair",
+        aclSubmitApps: "*",
+        aclAdministerApps: "*",
       },
       {
         name: "production",
@@ -68,6 +70,8 @@ export class MemStorage implements IStorage {
         maxRunningApps: 100,
         maxAMShare: 0.3,
         allowPreemptionFrom: true,
+        aclSubmitApps: "*",
+        aclAdministerApps: "*",
       },
       {
         name: "development",
@@ -110,7 +114,9 @@ export class MemStorage implements IStorage {
         maxAMShare: queue.maxAMShare || null,
         allowPreemptionFrom: queue.allowPreemptionFrom || null,
         allowPreemptionTo: queue.allowPreemptionTo || null,
-        reservation: queue.reservation || null
+        reservation: queue.reservation || null,
+        aclSubmitApps: queue.aclSubmitApps || null,
+        aclAdministerApps: queue.aclAdministerApps || null
       };
       this.queues.set(id, newQueue);
     });
@@ -140,7 +146,9 @@ export class MemStorage implements IStorage {
       maxAMShare: insertQueue.maxAMShare ?? null,
       allowPreemptionFrom: insertQueue.allowPreemptionFrom ?? null,
       allowPreemptionTo: insertQueue.allowPreemptionTo ?? null,
-      reservation: insertQueue.reservation ?? null
+      reservation: insertQueue.reservation ?? null,
+      aclSubmitApps: insertQueue.aclSubmitApps ?? null,
+      aclAdministerApps: insertQueue.aclAdministerApps ?? null
     };
     this.queues.set(id, queue);
     this.pendingChanges.add(id);

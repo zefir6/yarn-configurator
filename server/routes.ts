@@ -353,6 +353,7 @@ async function validateXML(content: string): Promise<{ isValid: boolean; errors?
 
 function generateXMLFromQueues(queues: any[]): string {
   console.log('LOCAL generateXMLFromQueues called with', queues.length, 'queues');
+  console.log('Queue allowPreemptionFrom values:', queues.map(q => ({ name: q.name, allowPreemptionFrom: q.allowPreemptionFrom })));
   
   // Build hierarchical structure with root queue
   const buildQueueElement = (queue: any, allQueues: any[]): any => {
@@ -360,11 +361,12 @@ function generateXMLFromQueues(queues: any[]): string {
       $: { name: queue.name }
     };
 
-    // Add properties for non-root queues
+    // Add properties for all queues
+    if (queue.weight && queue.weight !== 1) queueElement.weight = queue.weight;
+    if (queue.schedulingPolicy) queueElement.schedulingPolicy = queue.schedulingPolicy;
+    
+    // Resource constraints (not typically used for root queue)
     if (queue.name !== 'root') {
-      if (queue.weight) queueElement.weight = queue.weight;
-      if (queue.schedulingPolicy) queueElement.schedulingPolicy = queue.schedulingPolicy;
-      
       if (queue.minMemory || queue.minVcores) {
         queueElement.minResources = `${queue.minMemory || 0} mb,${queue.minVcores || 0} vcores`;
       }
@@ -375,12 +377,28 @@ function generateXMLFromQueues(queues: any[]): string {
       
       if (queue.maxRunningApps) queueElement.maxRunningApps = queue.maxRunningApps;
       if (queue.maxAMShare) queueElement.maxAMShare = queue.maxAMShare;
-      if (queue.allowPreemptionFrom) queueElement.allowPreemptionFrom = 'true';
-      if (queue.allowPreemptionTo) queueElement.allowPreemptionTo = 'true';
-    } else {
-      // Root queue properties
-      if (queue.weight && queue.weight !== 1) queueElement.weight = queue.weight;
-      if (queue.schedulingPolicy && queue.schedulingPolicy !== 'fair') queueElement.schedulingPolicy = queue.schedulingPolicy;
+    }
+    
+    // Preemption settings (apply to all queues, default to false if not specified)
+    // For allowPreemptionFrom, always include explicit value
+    const allowPreemptionFrom = queue.allowPreemptionFrom !== null ? queue.allowPreemptionFrom : false;
+    queueElement.allowPreemptionFrom = allowPreemptionFrom ? 'true' : 'false';
+    
+    // For allowPreemptionTo, only include if explicitly set
+    if (queue.allowPreemptionTo !== null && queue.allowPreemptionTo !== undefined) {
+      queueElement.allowPreemptionTo = queue.allowPreemptionTo ? 'true' : 'false';
+    }
+    
+    // ACL settings (provide defaults if not specified)
+    const aclSubmitApps = queue.aclSubmitApps || "*";
+    const aclAdministerApps = queue.aclAdministerApps || "*";
+    
+    // Only include ACLs if they're not the default "*" value
+    if (aclSubmitApps && aclSubmitApps !== "*") {
+      queueElement.aclSubmitApps = aclSubmitApps;
+    }
+    if (aclAdministerApps && aclAdministerApps !== "*") {
+      queueElement.aclAdministerApps = aclAdministerApps;
     }
 
     // Find and add child queues
@@ -392,10 +410,11 @@ function generateXMLFromQueues(queues: any[]): string {
     return queueElement;
   };
 
+  // TODO: Get default policy from global config instead of hardcoding
   const allocations: any = {
     $: { xmlns: undefined },
     userMaxAppsDefault: 5,
-    defaultQueueSchedulingPolicy: 'fair',
+    defaultQueueSchedulingPolicy: 'fair', // Should be configurable
     queuePlacementPolicy: {
       rule: [
         { $: { name: 'specified' } },

@@ -18,6 +18,17 @@ export const queues = sqliteTable("queues", {
   allowPreemptionFrom: integer("allow_preemption_from", { mode: "boolean" }).default(false),
   allowPreemptionTo: integer("allow_preemption_to", { mode: "boolean" }).default(false),
   reservation: integer("reservation", { mode: "boolean" }).default(false),
+  aclSubmitApps: text("acl_submit_apps"),
+  aclAdministerApps: text("acl_administer_apps"),
+});
+
+// Global configuration settings
+export const globalConfig = sqliteTable("global_config", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  defaultQueueSchedulingPolicy: text("default_queue_scheduling_policy").default("fair"),
+  userMaxAppsDefault: integer("user_max_apps_default").default(5),
+  queueMaxAppsDefault: integer("queue_max_apps_default"),
+  queueMaxAMShareDefault: real("queue_max_am_share_default"),
 });
 
 // Configuration file metadata
