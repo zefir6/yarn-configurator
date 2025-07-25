@@ -97,7 +97,7 @@ export async function parseQueuesFromXML(content: string): Promise<any[]> {
   });
 }
 
-export function generateXMLFromQueues(queues: any[]): string {
+export function generateXMLFromQueues(queues: any[], globalConfig?: any): string {
   // FORCE DEBUG OUTPUT TO CONSOLE
   console.log('>>> XML-UTILS generateXMLFromQueues called with', queues.length, 'queues');
   console.log('Queue allowPreemptionFrom values:', queues.map(q => ({ name: q.name, allowPreemptionFrom: q.allowPreemptionFrom })));
@@ -227,14 +227,27 @@ export function generateXMLFromQueues(queues: any[]): string {
     });
   }
   
-  // Add global settings
-  xml += `\n  <userMaxAppsDefault>5</userMaxAppsDefault>\n`;
-  xml += `  <defaultQueueSchedulingPolicy>fair</defaultQueueSchedulingPolicy>\n\n`;
+  // Add global settings using configuration or defaults
+  const userMaxApps = globalConfig?.userMaxAppsDefault || 5;
+  const defaultPolicy = globalConfig?.defaultQueueSchedulingPolicy || "fair";
+  const placementRules = globalConfig?.queuePlacementRules || "specified,user,default";
+  const defaultQueue = globalConfig?.defaultQueue || "default";
+  
+  xml += `\n  <userMaxAppsDefault>${userMaxApps}</userMaxAppsDefault>\n`;
+  xml += `  <defaultQueueSchedulingPolicy>${defaultPolicy}</defaultQueueSchedulingPolicy>\n\n`;
   
   xml += `  <queuePlacementPolicy>\n`;
-  xml += `    <rule name="specified"/>\n`;
-  xml += `    <rule name="user"/>\n`;
-  xml += `    <rule name="default" queue="default"/>\n`;
+  
+  // Parse placement rules and generate rule elements
+  const rules = placementRules.split(',').map((rule: string) => rule.trim());
+  rules.forEach((rule: string) => {
+    if (rule === 'default') {
+      xml += `    <rule name="default" queue="${defaultQueue}"/>\n`;
+    } else {
+      xml += `    <rule name="${rule}"/>\n`;
+    }
+  });
+  
   xml += `  </queuePlacementPolicy>\n`;
   
   xml += `</allocations>`;

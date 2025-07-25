@@ -323,6 +323,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Global configuration endpoints
+  app.get("/api/global-config", async (req, res) => {
+    try {
+      const globalConfig = await storage.getGlobalConfig();
+      res.json(globalConfig);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get global configuration" });
+    }
+  });
+
+  app.put("/api/global-config", async (req, res) => {
+    try {
+      const { globalConfigFormSchema } = await import("@shared/schema");
+      const validatedData = globalConfigFormSchema.parse(req.body);
+      const updatedConfig = await storage.updateGlobalConfig(validatedData);
+      res.json(updatedConfig);
+    } catch (error) {
+      console.error("Failed to update global config:", error);
+      res.status(500).json({ message: "Failed to update global configuration" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

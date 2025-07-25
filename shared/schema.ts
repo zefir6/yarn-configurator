@@ -29,6 +29,8 @@ export const globalConfig = sqliteTable("global_config", {
   userMaxAppsDefault: integer("user_max_apps_default").default(5),
   queueMaxAppsDefault: integer("queue_max_apps_default"),
   queueMaxAMShareDefault: real("queue_max_am_share_default"),
+  queuePlacementRules: text("queue_placement_rules").default("specified,user,default"),
+  defaultQueue: text("default_queue").default("default"),
 });
 
 // Configuration file metadata
@@ -50,11 +52,17 @@ export const insertConfigFileSchema = createInsertSchema(configFiles).omit({
   id: true,
 });
 
+export const insertGlobalConfigSchema = createInsertSchema(globalConfig).omit({
+  id: true,
+});
+
 // Types
 export type Queue = typeof queues.$inferSelect;
 export type InsertQueue = z.infer<typeof insertQueueSchema>;
 export type ConfigFile = typeof configFiles.$inferSelect;
 export type InsertConfigFile = z.infer<typeof insertConfigFileSchema>;
+export type GlobalConfig = typeof globalConfig.$inferSelect;
+export type InsertGlobalConfig = z.infer<typeof insertGlobalConfigSchema>;
 
 // Extended schemas for forms
 export const queueFormSchema = insertQueueSchema.extend({
@@ -69,3 +77,15 @@ export const queueFormSchema = insertQueueSchema.extend({
 });
 
 export type QueueFormData = z.infer<typeof queueFormSchema>;
+
+// Global configuration form schema
+export const globalConfigFormSchema = insertGlobalConfigSchema.extend({
+  defaultQueueSchedulingPolicy: z.enum(["fair", "fifo", "drf"]),
+  userMaxAppsDefault: z.number().min(1),
+  queueMaxAppsDefault: z.number().min(1).optional(),
+  queueMaxAMShareDefault: z.number().min(0).max(1).optional(),
+  queuePlacementRules: z.string().min(1),
+  defaultQueue: z.string().min(1),
+});
+
+export type GlobalConfigFormData = z.infer<typeof globalConfigFormSchema>;

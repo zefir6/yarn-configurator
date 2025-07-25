@@ -1,4 +1,4 @@
-import { type Queue, type InsertQueue, type ConfigFile, type InsertConfigFile } from "@shared/schema";
+import { type Queue, type InsertQueue, type ConfigFile, type InsertConfigFile, type GlobalConfig, type InsertGlobalConfig } from "@shared/schema";
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -19,6 +19,10 @@ export interface IStorage {
   syncQueuesFromXML(queues: any[]): Promise<void>;
   reloadFromDisk(): Promise<void>;
   
+  // Global config operations
+  getGlobalConfig(): Promise<GlobalConfig>;
+  updateGlobalConfig(config: Partial<InsertGlobalConfig>): Promise<GlobalConfig>;
+  
   // Pending changes operations
   getPendingChangesCount(): Promise<number>;
   hasPendingChanges(): Promise<boolean>;
@@ -29,6 +33,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private queues: Map<number, Queue>;
   private configFiles: Map<number, ConfigFile>;
+  private globalConfig: GlobalConfig;
   private currentQueueId: number;
   private currentConfigId: number;
   private defaultConfigPath: string;
@@ -38,6 +43,15 @@ export class MemStorage implements IStorage {
   constructor() {
     this.queues = new Map();
     this.configFiles = new Map();
+    this.globalConfig = {
+      id: 1,
+      defaultQueueSchedulingPolicy: "fair",
+      userMaxAppsDefault: 5,
+      queueMaxAppsDefault: null,
+      queueMaxAMShareDefault: null,
+      queuePlacementRules: "specified,user,default",
+      defaultQueue: "default",
+    };
     this.currentQueueId = 1;
     this.currentConfigId = 1;
     this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || './data/fair-scheduler.xml';
@@ -369,7 +383,7 @@ export class MemStorage implements IStorage {
       // Regenerate and save XML from current queues
       const allQueues = Array.from(this.queues.values());
       const { generateXMLFromQueues } = await import('./xml-utils');
-      const xmlContent = generateXMLFromQueues(allQueues);
+      const xmlContent = generateXMLFromQueues(allQueues, this.globalConfig);
       
       // Update config file with regenerated XML
       const configFile = await this.getConfigFile();
@@ -451,6 +465,18 @@ export class MemStorage implements IStorage {
       console.error('Failed to reload from disk:', error);
       throw new Error(`Failed to reload configuration from disk: ${error}`);
     }
+  }
+
+  async getGlobalConfig(): Promise<GlobalConfig> {
+    return this.globalConfig;
+  }
+
+  async updateGlobalConfig(config: Partial<InsertGlobalConfig>): Promise<GlobalConfig> {
+    this.globalConfig = {
+      ...this.globalConfig,
+      ...config,
+    };
+    return this.globalConfig;
   }
 }
 

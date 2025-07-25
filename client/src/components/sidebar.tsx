@@ -19,7 +19,7 @@ import {
   Eye
 } from "lucide-react";
 
-type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation";
+type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation" | "global-settings";
 
 interface SidebarProps {
   activeTab: TabType;
@@ -181,6 +181,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const navItems = [
     { id: "overview", icon: BarChart3, label: "Overview" },
     { id: "queues", icon: Network, label: "Queue Configuration" },
+    { id: "global-settings", icon: Settings, label: "Global Settings" },
     { id: "policies", icon: Scale, label: "Scheduling Policies" },
     { id: "xml-editor", icon: Code, label: "XML Editor" },
     { id: "validation", icon: CheckSquare, label: "Validation & Preview" },

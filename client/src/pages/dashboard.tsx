@@ -3,9 +3,10 @@ import Sidebar from "@/components/sidebar";
 import Overview from "@/components/overview";
 import QueueForm from "@/components/queue-form";
 import XmlEditor from "@/components/xml-editor";
+import GlobalSettings from "@/components/global-settings";
 import { CheckCircle, HelpCircle } from "lucide-react";
 
-type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation";
+type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation" | "global-settings";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -17,7 +18,8 @@ export default function Dashboard() {
       'queues': 'Queue Configuration',
       'policies': 'Scheduling Policies',
       'xml-editor': 'XML Editor',
-      'validation': 'Validation & Preview'
+      'validation': 'Validation & Preview',
+      'global-settings': 'Global Settings'
     };
     return titles[tab];
   };
@@ -49,8 +51,10 @@ export default function Dashboard() {
         );
       case "xml-editor":
         return <XmlEditor />;
+      case "global-settings":
+        return <GlobalSettings />;
       default:
-        return <Overview />;
+        return <Overview onEditQueue={handleEditQueue} onSwitchToQueues={handleSwitchToQueues} />;
     }
   };
 
