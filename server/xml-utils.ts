@@ -1,5 +1,67 @@
 import { parseString } from 'xml2js';
 
+export async function parseGlobalConfigFromXML(content: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    parseString(content, { explicitArray: false }, (err: any, result: any) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const globalConfig: any = {
+        id: 1,
+        defaultQueueSchedulingPolicy: "fair",
+        userMaxAppsDefault: 5,
+        queueMaxAppsDefault: null,
+        queueMaxAMShareDefault: null,
+        queuePlacementRules: "specified,user,default",
+        defaultQueue: "default",
+      };
+
+      if (!result.allocations) {
+        resolve(globalConfig);
+        return;
+      }
+
+      // Parse global configuration elements
+      if (result.allocations.defaultQueueSchedulingPolicy) {
+        globalConfig.defaultQueueSchedulingPolicy = result.allocations.defaultQueueSchedulingPolicy;
+      }
+
+      if (result.allocations.userMaxAppsDefault) {
+        globalConfig.userMaxAppsDefault = parseInt(result.allocations.userMaxAppsDefault);
+      }
+
+      if (result.allocations.queueMaxAppsDefault) {
+        globalConfig.queueMaxAppsDefault = parseInt(result.allocations.queueMaxAppsDefault);
+      }
+
+      if (result.allocations.queueMaxAMShareDefault) {
+        globalConfig.queueMaxAMShareDefault = parseFloat(result.allocations.queueMaxAMShareDefault);
+      }
+
+      // Parse queue placement policy
+      if (result.allocations.queuePlacementPolicy && result.allocations.queuePlacementPolicy.rule) {
+        const rules = Array.isArray(result.allocations.queuePlacementPolicy.rule) 
+          ? result.allocations.queuePlacementPolicy.rule 
+          : [result.allocations.queuePlacementPolicy.rule];
+        
+        const ruleNames = rules.map((rule: any) => {
+          if (rule.$ && rule.$.name === 'default' && rule.$.queue) {
+            globalConfig.defaultQueue = rule.$.queue;
+            return 'default';
+          }
+          return rule.$ ? rule.$.name : rule;
+        });
+        
+        globalConfig.queuePlacementRules = ruleNames.join(',');
+      }
+
+      resolve(globalConfig);
+    });
+  });
+}
+
 export async function parseQueuesFromXML(content: string): Promise<any[]> {
   return new Promise((resolve, reject) => {
     parseString(content, { explicitArray: false }, (err: any, result: any) => {

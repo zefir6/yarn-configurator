@@ -32,7 +32,7 @@
   </queue>
 
   <userMaxAppsDefault>5</userMaxAppsDefault>
-  <defaultQueueSchedulingPolicy>fair</defaultQueueSchedulingPolicy>
+  <defaultQueueSchedulingPolicy>drf</defaultQueueSchedulingPolicy>
 
   <queuePlacementPolicy>
     <rule name="specified"/>

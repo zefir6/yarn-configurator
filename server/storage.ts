@@ -263,9 +263,16 @@ export class MemStorage implements IStorage {
     };
     this.configFiles.set(configFile.id, configFile);
     
-    // Parse XML and sync queues from it
+    // Parse global configuration and queues from XML
     try {
-      const { parseQueuesFromXML } = await import('./xml-utils');
+      const { parseGlobalConfigFromXML, parseQueuesFromXML } = await import('./xml-utils');
+      
+      // Parse global configuration from XML first
+      const parsedGlobalConfig = await parseGlobalConfigFromXML(xmlContent);
+      this.globalConfig = { ...this.globalConfig, ...parsedGlobalConfig };
+      console.log('Loaded global config from XML:', this.globalConfig);
+      
+      // Parse and sync queues from XML
       const parsedQueues = await parseQueuesFromXML(xmlContent);
       await this.syncQueuesFromXML(parsedQueues);
       
@@ -447,8 +454,15 @@ export class MemStorage implements IStorage {
       this.configFiles.clear();
       this.configFiles.set(configFile.id, configFile);
       
-      // Parse XML and sync queues from it
-      const { parseQueuesFromXML } = await import('./xml-utils');
+      // Parse global configuration and queues from XML
+      const { parseGlobalConfigFromXML, parseQueuesFromXML } = await import('./xml-utils');
+      
+      // Parse global configuration from XML first
+      const parsedGlobalConfig = await parseGlobalConfigFromXML(xmlContent);
+      this.globalConfig = { ...this.globalConfig, ...parsedGlobalConfig };
+      console.log('Reloaded global config from XML:', this.globalConfig);
+      
+      // Parse and sync queues from XML
       const parsedQueues = await parseQueuesFromXML(xmlContent);
       await this.syncQueuesFromXML(parsedQueues);
       
