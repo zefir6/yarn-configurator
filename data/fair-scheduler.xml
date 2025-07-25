@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <allocations>
   <queue name="root">
-    <weight>1</weight>
     <schedulingPolicy>fair</schedulingPolicy>
+    <allowPreemptionFrom>false</allowPreemptionFrom>
     <queue name="production">
       <weight>4</weight>
       <schedulingPolicy>fair</schedulingPolicy>
@@ -19,6 +19,7 @@
       <maxResources>8192 mb,4 vcores</maxResources>
       <maxRunningApps>50</maxRunningApps>
       <maxAMShare>0.5</maxAMShare>
+      <allowPreemptionFrom>false</allowPreemptionFrom>
     </queue>
     <queue name="default">
       <weight>1</weight>
@@ -26,10 +27,13 @@
       <minResources>1024 mb,1 vcores</minResources>
       <maxResources>8192 mb,4 vcores</maxResources>
       <maxRunningApps>25</maxRunningApps>
+      <allowPreemptionFrom>false</allowPreemptionFrom>
     </queue>
   </queue>
+
   <userMaxAppsDefault>5</userMaxAppsDefault>
   <defaultQueueSchedulingPolicy>fair</defaultQueueSchedulingPolicy>
+
   <queuePlacementPolicy>
     <rule name="specified"/>
     <rule name="user"/>
