@@ -6,7 +6,7 @@ import { z } from "zod";
 import multer, { FileFilterCallback } from "multer";
 import * as path from "path";
 import { parseString, Builder } from "xml2js";
-import { parseQueuesFromXML } from "./xml-utils";
+import { parseQueuesFromXML, generateXMLFromQueues } from "./xml-utils";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -267,9 +267,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('=== GENERATE XML ROUTE CALLED ===');
       const queues = await storage.getQueues();
+      const globalConfig = await storage.getGlobalConfig();
       console.log('Retrieved queues from storage:', queues.length);
+      console.log('Retrieved global config from storage:', globalConfig);
       console.log('Queue details:', queues.map(q => ({ name: q.name, parent: q.parent })));
-      const xmlContent = generateXMLFromQueues(queues);
+      const xmlContent = generateXMLFromQueues(queues, globalConfig);
       console.log('Generated XML contains root:', xmlContent.includes('queue name="root"'));
       res.json({ content: xmlContent });
     } catch (error) {
@@ -373,98 +375,4 @@ async function validateXML(content: string): Promise<{ isValid: boolean; errors?
 
 
 
-function generateXMLFromQueues(queues: any[]): string {
-  console.log('LOCAL generateXMLFromQueues called with', queues.length, 'queues');
-  console.log('Queue allowPreemptionFrom values:', queues.map(q => ({ name: q.name, allowPreemptionFrom: q.allowPreemptionFrom })));
-  
-  // Build hierarchical structure with root queue
-  const buildQueueElement = (queue: any, allQueues: any[]): any => {
-    const queueElement: any = {
-      $: { name: queue.name }
-    };
 
-    // Add properties for all queues
-    if (queue.weight && queue.weight !== 1) queueElement.weight = queue.weight;
-    if (queue.schedulingPolicy) queueElement.schedulingPolicy = queue.schedulingPolicy;
-    
-    // Resource constraints (not typically used for root queue)
-    if (queue.name !== 'root') {
-      if (queue.minMemory || queue.minVcores) {
-        queueElement.minResources = `${queue.minMemory || 0} mb,${queue.minVcores || 0} vcores`;
-      }
-      
-      if (queue.maxMemory || queue.maxVcores) {
-        queueElement.maxResources = `${queue.maxMemory || 0} mb,${queue.maxVcores || 0} vcores`;
-      }
-      
-      if (queue.maxRunningApps) queueElement.maxRunningApps = queue.maxRunningApps;
-      if (queue.maxAMShare) queueElement.maxAMShare = queue.maxAMShare;
-    }
-    
-    // Preemption settings (apply to all queues, default to false if not specified)
-    // For allowPreemptionFrom, always include explicit value
-    const allowPreemptionFrom = queue.allowPreemptionFrom !== null ? queue.allowPreemptionFrom : false;
-    queueElement.allowPreemptionFrom = allowPreemptionFrom ? 'true' : 'false';
-    
-    // For allowPreemptionTo, only include if explicitly set
-    if (queue.allowPreemptionTo !== null && queue.allowPreemptionTo !== undefined) {
-      queueElement.allowPreemptionTo = queue.allowPreemptionTo ? 'true' : 'false';
-    }
-    
-    // ACL settings (provide defaults if not specified)
-    const aclSubmitApps = queue.aclSubmitApps || "*";
-    const aclAdministerApps = queue.aclAdministerApps || "*";
-    
-    // Only include ACLs if they're not the default "*" value
-    if (aclSubmitApps && aclSubmitApps !== "*") {
-      queueElement.aclSubmitApps = aclSubmitApps;
-    }
-    if (aclAdministerApps && aclAdministerApps !== "*") {
-      queueElement.aclAdministerApps = aclAdministerApps;
-    }
-
-    // Find and add child queues
-    const children = allQueues.filter(q => q.parent === queue.name && q.name !== queue.name);
-    if (children.length > 0) {
-      queueElement.queue = children.map(child => buildQueueElement(child, allQueues));
-    }
-
-    return queueElement;
-  };
-
-  // TODO: Get default policy from global config instead of hardcoding
-  const allocations: any = {
-    $: { xmlns: undefined },
-    userMaxAppsDefault: 5,
-    defaultQueueSchedulingPolicy: 'fair', // Should be configurable
-    queuePlacementPolicy: {
-      rule: [
-        { $: { name: 'specified' } },
-        { $: { name: 'user' } },
-        { $: { name: 'default', queue: 'default' } }
-      ]
-    }
-  };
-
-  // Find root queue and build hierarchical structure
-  const rootQueue = queues.find(q => q.name === 'root');
-  if (rootQueue) {
-    console.log('Found root queue, building hierarchical structure');
-    allocations.queue = buildQueueElement(rootQueue, queues);
-  } else {
-    console.log('No root queue found, using flat structure');
-    // Fallback to flat structure
-    allocations.queue = [];
-    queues.forEach(queue => {
-      if (queue.name === 'root') return;
-      allocations.queue.push(buildQueueElement(queue, queues));
-    });
-  }
-
-  const builder = new Builder({ 
-    xmldec: { version: '1.0' },
-    renderOpts: { pretty: true, indent: '  ' }
-  });
-  
-  return builder.buildObject({ allocations });
-}

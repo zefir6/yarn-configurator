@@ -35,8 +35,8 @@
   <defaultQueueSchedulingPolicy>drf</defaultQueueSchedulingPolicy>
 
   <queuePlacementPolicy>
-    <rule name="specified"/>
-    <rule name="user"/>
-    <rule name="default" queue="default"/>
+    <rule name="specified" create="false"/>
+    <rule name="user" create="false"/>
+    <rule name="default"/>
   </queuePlacementPolicy>
 </allocations>

@@ -40,21 +40,33 @@ export async function parseGlobalConfigFromXML(content: string): Promise<any> {
         globalConfig.queueMaxAMShareDefault = parseFloat(result.allocations.queueMaxAMShareDefault);
       }
 
-      // Parse queue placement policy
+      // Parse queue placement policy with create attributes
       if (result.allocations.queuePlacementPolicy && result.allocations.queuePlacementPolicy.rule) {
         const rules = Array.isArray(result.allocations.queuePlacementPolicy.rule) 
           ? result.allocations.queuePlacementPolicy.rule 
           : [result.allocations.queuePlacementPolicy.rule];
         
-        const ruleNames = rules.map((rule: any) => {
-          if (rule.$ && rule.$.name === 'default' && rule.$.queue) {
-            globalConfig.defaultQueue = rule.$.queue;
-            return 'default';
+        const ruleStrings = rules.map((rule: any) => {
+          if (rule.$ && rule.$.name) {
+            let ruleString = rule.$.name;
+            
+            // Handle create attribute
+            if (rule.$.create !== undefined) {
+              ruleString += `:create=${rule.$.create}`;
+            }
+            
+            // Handle queue attribute for default rule
+            if (rule.$.name === 'default' && rule.$.queue) {
+              globalConfig.defaultQueue = rule.$.queue;
+              ruleString += `:queue=${rule.$.queue}`;
+            }
+            
+            return ruleString;
           }
-          return rule.$ ? rule.$.name : rule;
+          return rule;
         });
         
-        globalConfig.queuePlacementRules = ruleNames.join(',');
+        globalConfig.queuePlacementRules = ruleStrings.join(',');
       }
 
       resolve(globalConfig);
@@ -162,6 +174,7 @@ export async function parseQueuesFromXML(content: string): Promise<any[]> {
 export function generateXMLFromQueues(queues: any[], globalConfig?: any): string {
   // FORCE DEBUG OUTPUT TO CONSOLE
   console.log('>>> XML-UTILS generateXMLFromQueues called with', queues.length, 'queues');
+  console.log('>>> globalConfig parameter:', globalConfig);
   console.log('Queue allowPreemptionFrom values:', queues.map(q => ({ name: q.name, allowPreemptionFrom: q.allowPreemptionFrom })));
   
   let xml = '<?xml version="1.0"?>\n<allocations>\n';
@@ -296,18 +309,41 @@ export function generateXMLFromQueues(queues: any[], globalConfig?: any): string
   const defaultQueue = globalConfig?.defaultQueue || "default";
   
   xml += `\n  <userMaxAppsDefault>${userMaxApps}</userMaxAppsDefault>\n`;
+  
+  if (globalConfig?.queueMaxAppsDefault) {
+    xml += `  <queueMaxAppsDefault>${globalConfig.queueMaxAppsDefault}</queueMaxAppsDefault>\n`;
+  }
+  
+  if (globalConfig?.queueMaxAMShareDefault) {
+    xml += `  <queueMaxAMShareDefault>${globalConfig.queueMaxAMShareDefault}</queueMaxAMShareDefault>\n`;
+  }
+  
   xml += `  <defaultQueueSchedulingPolicy>${defaultPolicy}</defaultQueueSchedulingPolicy>\n\n`;
   
   xml += `  <queuePlacementPolicy>\n`;
   
-  // Parse placement rules and generate rule elements
+  // Parse placement rules and generate rule elements with attributes
   const rules = placementRules.split(',').map((rule: string) => rule.trim());
   rules.forEach((rule: string) => {
-    if (rule === 'default') {
-      xml += `    <rule name="default" queue="${defaultQueue}"/>\n`;
-    } else {
-      xml += `    <rule name="${rule}"/>\n`;
+    // Parse rule with attributes (e.g., "specified:create=false")
+    const [ruleName, ...attributes] = rule.split(':');
+    let ruleXml = `    <rule name="${ruleName}"`;
+    
+    // Process attributes
+    attributes.forEach(attr => {
+      const [key, value] = attr.split('=');
+      if (key && value) {
+        ruleXml += ` ${key}="${value}"`;
+      }
+    });
+    
+    // Handle special case for default rule with queue
+    if (ruleName === 'default' && !attributes.some(attr => attr.startsWith('queue='))) {
+      ruleXml += ` queue="${defaultQueue}"`;
     }
+    
+    ruleXml += '/>\n';
+    xml += ruleXml;
   });
   
   xml += `  </queuePlacementPolicy>\n`;

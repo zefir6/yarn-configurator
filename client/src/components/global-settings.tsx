@@ -24,23 +24,26 @@ export default function GlobalSettings() {
 
   const form = useForm<GlobalConfigFormData>({
     resolver: zodResolver(globalConfigFormSchema),
-    defaultValues: globalConfig || {
-      defaultQueueSchedulingPolicy: "fair",
-      userMaxAppsDefault: 5,
-      queueMaxAppsDefault: undefined,
-      queueMaxAMShareDefault: undefined,
-      queuePlacementRules: "specified,user,default",
-      defaultQueue: "default",
+    defaultValues: {
+      defaultQueueSchedulingPolicy: globalConfig?.defaultQueueSchedulingPolicy as "fair" | "fifo" | "drf" || "fair",
+      userMaxAppsDefault: globalConfig?.userMaxAppsDefault || 5,
+      queueMaxAppsDefault: globalConfig?.queueMaxAppsDefault || undefined,
+      queueMaxAMShareDefault: globalConfig?.queueMaxAMShareDefault || undefined,
+      queuePlacementRules: globalConfig?.queuePlacementRules || "specified,user,default",
+      defaultQueue: globalConfig?.defaultQueue || "default",
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: GlobalConfigFormData) =>
-      apiRequest("/api/global-config", {
+    mutationFn: async (data: GlobalConfigFormData) => {
+      const response = await fetch("/api/global-config", {
         method: "PUT",
         body: JSON.stringify(data),
         headers: { "Content-Type": "application/json" },
-      }),
+      });
+      if (!response.ok) throw new Error('Failed to update');
+      return response.json();
+    },
     onSuccess: () => {
       toast({ description: "Global configuration updated successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/global-config"] });
@@ -58,12 +61,12 @@ export default function GlobalSettings() {
   React.useEffect(() => {
     if (globalConfig) {
       form.reset({
-        defaultQueueSchedulingPolicy: globalConfig.defaultQueueSchedulingPolicy,
-        userMaxAppsDefault: globalConfig.userMaxAppsDefault,
+        defaultQueueSchedulingPolicy: globalConfig.defaultQueueSchedulingPolicy as "fair" | "fifo" | "drf",
+        userMaxAppsDefault: globalConfig.userMaxAppsDefault || 5,
         queueMaxAppsDefault: globalConfig.queueMaxAppsDefault || undefined,
         queueMaxAMShareDefault: globalConfig.queueMaxAMShareDefault || undefined,
-        queuePlacementRules: globalConfig.queuePlacementRules,
-        defaultQueue: globalConfig.defaultQueue,
+        queuePlacementRules: globalConfig.queuePlacementRules || "specified,user,default",
+        defaultQueue: globalConfig.defaultQueue || "default",
       });
     }
   }, [globalConfig, form]);
@@ -75,12 +78,12 @@ export default function GlobalSettings() {
   const handleCancel = () => {
     if (globalConfig) {
       form.reset({
-        defaultQueueSchedulingPolicy: globalConfig.defaultQueueSchedulingPolicy,
-        userMaxAppsDefault: globalConfig.userMaxAppsDefault,
+        defaultQueueSchedulingPolicy: globalConfig.defaultQueueSchedulingPolicy as "fair" | "fifo" | "drf",
+        userMaxAppsDefault: globalConfig.userMaxAppsDefault || 5,
         queueMaxAppsDefault: globalConfig.queueMaxAppsDefault || undefined,
         queueMaxAMShareDefault: globalConfig.queueMaxAMShareDefault || undefined,
-        queuePlacementRules: globalConfig.queuePlacementRules,
-        defaultQueue: globalConfig.defaultQueue,
+        queuePlacementRules: globalConfig.queuePlacementRules || "specified,user,default",
+        defaultQueue: globalConfig.defaultQueue || "default",
       });
     }
     setIsEditing(false);
@@ -289,7 +292,9 @@ export default function GlobalSettings() {
                         />
                       </FormControl>
                       <p className="text-xs text-carbon-gray-40">
-                        Comma-separated list of placement rules. Available rules: specified, user, primaryGroup, secondaryGroupExistingQueue, nestedUserQueue, default
+                        Comma-separated list of placement rules with optional attributes.<br/>
+                        Examples: "specified:create=false", "user:create=false", "default"<br/>
+                        Available rules: specified, user, primaryGroup, secondaryGroupExistingQueue, nestedUserQueue, default
                       </p>
                       <FormMessage />
                     </FormItem>
