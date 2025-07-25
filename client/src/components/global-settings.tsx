@@ -247,12 +247,15 @@ export default function GlobalSettings() {
                       <FormLabel>Queue Max AM Share Default (Optional)</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          step="0.01"
+                          type="text"
                           value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value.toString()) : ""}
                           onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            field.onChange(isNaN(val) ? undefined : val);
+                            const strVal = e.target.value;
+                            // Allow decimal input between 0 and 1
+                            if (strVal === '' || /^0?\.\d*$|^1\.0*$|^0$|^1$/.test(strVal)) {
+                              const val = parseFloat(strVal);
+                              field.onChange(isNaN(val) ? undefined : val);
+                            }
                           }}
                         />
                       </FormControl>

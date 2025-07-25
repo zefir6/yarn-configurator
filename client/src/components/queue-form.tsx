@@ -293,14 +293,16 @@ export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProp
                           <FormLabel>Weight</FormLabel>
                           <FormControl>
                             <Input
-                              type="number"
-                              step="0.1"
-                              min="0.1"
+                              type="text"
                               placeholder="1.0"
                               value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value.toString()) : ''}
                               onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                field.onChange(isNaN(val) ? undefined : val);
+                                const strVal = e.target.value;
+                                // Allow decimal input
+                                if (strVal === '' || /^\d*\.?\d*$/.test(strVal)) {
+                                  const val = parseFloat(strVal);
+                                  field.onChange(isNaN(val) ? undefined : val);
+                                }
                               }}
                             />
                           </FormControl>
@@ -457,15 +459,16 @@ export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProp
                           <FormLabel>Max AM Share</FormLabel>
                           <FormControl>
                             <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              max="1"
+                              type="text"
                               placeholder="0.5"
                               value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value.toString()) : ""}
                               onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                field.onChange(isNaN(val) ? undefined : val);
+                                const strVal = e.target.value;
+                                // Allow decimal input between 0 and 1
+                                if (strVal === '' || /^0?\.\d*$|^1\.0*$|^0$|^1$/.test(strVal)) {
+                                  const val = parseFloat(strVal);
+                                  field.onChange(isNaN(val) ? undefined : val);
+                                }
                               }}
                             />
                           </FormControl>

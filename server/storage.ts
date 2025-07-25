@@ -252,13 +252,23 @@ export class MemStorage implements IStorage {
       }
     }
 
+    // Get actual file modification time
+    let actualModTime: string;
+    try {
+      const stats = await fs.stat(this.defaultConfigPath);
+      actualModTime = stats.mtime.toISOString();
+    } catch (error) {
+      // Fallback to current time if stat fails
+      actualModTime = new Date().toISOString();
+    }
+
     // Save to memory storage
     const configFile: ConfigFile = {
       id: this.currentConfigId++,
       filePath: this.defaultConfigPath,
       content: xmlContent,
       isValid: true,
-      lastModified: new Date().toISOString(),
+      lastModified: actualModTime,
       validationErrors: null
     };
     this.configFiles.set(configFile.id, configFile);
@@ -440,13 +450,23 @@ export class MemStorage implements IStorage {
       // Read the current file from disk
       const xmlContent = await this.readConfigFromDisk(this.defaultConfigPath);
       
+      // Get actual file modification time
+      let actualModTime: string;
+      try {
+        const stats = await fs.stat(this.defaultConfigPath);
+        actualModTime = stats.mtime.toISOString();
+      } catch (error) {
+        // Fallback to current time if stat fails
+        actualModTime = new Date().toISOString();
+      }
+
       // Update config file in memory
       const configFile: ConfigFile = {
         id: this.currentConfigId++,
         filePath: this.defaultConfigPath,
         content: xmlContent,
         isValid: true,
-        lastModified: new Date().toISOString(),
+        lastModified: actualModTime,
         validationErrors: null
       };
       
