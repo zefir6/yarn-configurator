@@ -142,5 +142,6 @@ The application follows a monorepo structure with clear separation of concerns:
 - **Fixed YARN queue metrics parsing error**: Enhanced error handling for undefined queue properties and improved data structure validation
 - **Reorganized YARN integration**: Moved YARN settings to Configuration tab and added cluster/queue summary to Overview page
 - **Improved YARN data robustness**: Added better null checks and type conversion for YARN API responses
+- **Removed redundant Validation & Preview tab**: Streamlined navigation by removing unnecessary section
 
 The application is designed to be deployed locally with comprehensive deployment instructions provided in README.md. It supports both in-memory storage for development and PostgreSQL for production use. The application includes full documentation for local deployment, Docker deployment, system service setup, and Hadoop integration.

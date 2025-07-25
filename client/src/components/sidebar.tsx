@@ -21,7 +21,7 @@ import {
   Activity
 } from "lucide-react";
 
-type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation" | "global-settings";
+type TabType = "overview" | "queues" | "policies" | "xml-editor" | "global-settings";
 
 interface SidebarProps {
   activeTab: TabType;
@@ -186,7 +186,6 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: "global-settings", icon: Settings, label: "Configuration" },
     { id: "policies", icon: Scale, label: "Scheduling Policies" },
     { id: "xml-editor", icon: Code, label: "XML Editor" },
-    { id: "validation", icon: CheckSquare, label: "Validation & Preview" },
   ];
 
   return (

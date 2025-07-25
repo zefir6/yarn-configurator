@@ -7,7 +7,7 @@ import GlobalSettings from "@/components/global-settings";
 import { YarnSettings } from "@/components/yarn-settings";
 import { CheckCircle, HelpCircle } from "lucide-react";
 
-type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation" | "global-settings";
+type TabType = "overview" | "queues" | "policies" | "xml-editor" | "global-settings";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -19,7 +19,6 @@ export default function Dashboard() {
       'queues': 'Queue Configuration',
       'policies': 'Scheduling Policies',
       'xml-editor': 'XML Editor',
-      'validation': 'Validation & Preview',
       'global-settings': 'Configuration'
     };
     return titles[tab];
