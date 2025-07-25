@@ -5,7 +5,12 @@ export class YarnResourceManagerClient {
   private enabled: boolean;
 
   constructor(connection: YarnConnection) {
-    this.baseUrl = `http://${connection.resourceManagerHost}:${connection.resourceManagerPort}/ws/v1/cluster`;
+    // Use mock endpoints when running on localhost:5000 for testing
+    if (connection.resourceManagerHost === 'localhost' && connection.resourceManagerPort === 5000) {
+      this.baseUrl = `http://${connection.resourceManagerHost}:${connection.resourceManagerPort}/mock-yarn/ws/v1/cluster`;
+    } else {
+      this.baseUrl = `http://${connection.resourceManagerHost}:${connection.resourceManagerPort}/ws/v1/cluster`;
+    }
     this.enabled = connection.enabled;
   }
 
