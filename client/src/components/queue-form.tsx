@@ -202,7 +202,7 @@ export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProp
                         Parent: {queue.parent || "root"}
                       </span>
                       <span className="text-sm text-carbon-gray-50">
-                        Weight: {queue.weight}
+                        Weight: {Number.isInteger(queue.weight) ? `${queue.weight}.0` : queue.weight}
                       </span>
                       <span className="text-sm text-carbon-gray-50">
                         Policy: {queue.schedulingPolicy}
@@ -298,6 +298,7 @@ export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProp
                               min="0.1"
                               placeholder="1.0"
                               {...field}
+                              value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value) : ''}
                               onChange={(e) => field.onChange(parseFloat(e.target.value))}
                             />
                           </FormControl>
@@ -460,7 +461,7 @@ export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProp
                               max="1"
                               placeholder="0.5"
                               {...field}
-                              value={field.value || ""}
+                              value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value) : ""}
                               onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                             />
                           </FormControl>

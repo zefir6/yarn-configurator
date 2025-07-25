@@ -254,7 +254,7 @@ export default function GlobalSettings() {
                             const value = e.target.value;
                             field.onChange(value ? parseFloat(value) : undefined);
                           }}
-                          value={field.value || ""}
+                          value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value) : ""}
                         />
                       </FormControl>
                       <FormMessage />
