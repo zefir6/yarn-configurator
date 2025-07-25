@@ -297,9 +297,11 @@ export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProp
                               step="0.1"
                               min="0.1"
                               placeholder="1.0"
-                              {...field}
-                              value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value) : ''}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                              value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value.toString()) : ''}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                field.onChange(isNaN(val) ? undefined : val);
+                              }}
                             />
                           </FormControl>
                           <FormDescription>
@@ -460,9 +462,11 @@ export default function QueueForm({ editingQueueId, onClearEdit }: QueueFormProp
                               min="0"
                               max="1"
                               placeholder="0.5"
-                              {...field}
-                              value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value) : ""}
-                              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                              value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value.toString()) : ""}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                field.onChange(isNaN(val) ? undefined : val);
+                              }}
                             />
                           </FormControl>
                           <FormDescription>

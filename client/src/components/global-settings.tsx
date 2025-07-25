@@ -249,12 +249,11 @@ export default function GlobalSettings() {
                         <Input
                           type="number"
                           step="0.01"
-                          {...field}
+                          value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value.toString()) : ""}
                           onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value ? parseFloat(value) : undefined);
+                            const val = parseFloat(e.target.value);
+                            field.onChange(isNaN(val) ? undefined : val);
                           }}
-                          value={field.value !== undefined ? (Number.isInteger(field.value) ? `${field.value}.0` : field.value) : ""}
                         />
                       </FormControl>
                       <FormMessage />
