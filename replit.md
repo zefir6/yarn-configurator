@@ -117,10 +117,17 @@ The application follows a monorepo structure with clear separation of concerns:
 
 ### Key Features
 - YARN queue hierarchy management
-- XML configuration generation and validation
+- XML configuration generation and validation with decimal preservation
 - Resource allocation and scheduling policy configuration
-- File upload/download capabilities
+- File upload/download capabilities with bidirectional XML synchronization
 - Real-time form validation and error handling
+- Global configuration management with queue placement policy attributes
 - Responsive design with mobile support
+
+### Recent Changes (July 25, 2025)
+- **Fixed critical XML parsing bug**: Application now reads global configuration from existing XML files instead of using hardcoded defaults
+- **Enhanced queue placement policy support**: Preserves create="false" attributes in queuePlacementPolicy rules during XML round-trip
+- **Decimal formatting preservation**: Fixed issue where numeric values like "4.0" were being converted to "4", ensuring YARN Resource Manager compatibility
+- **Removed duplicate generateXMLFromQueues function**: Eliminated function shadowing that was preventing global configuration from being used in XML generation
 
 The application is designed to be deployed locally with comprehensive deployment instructions provided in README.md. It supports both in-memory storage for development and PostgreSQL for production use. The application includes full documentation for local deployment, Docker deployment, system service setup, and Hadoop integration.

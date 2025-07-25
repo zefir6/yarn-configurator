@@ -4,7 +4,7 @@
     <schedulingPolicy>fair</schedulingPolicy>
     <allowPreemptionFrom>false</allowPreemptionFrom>
     <queue name="production">
-      <weight>4</weight>
+      <weight>4.0</weight>
       <schedulingPolicy>fair</schedulingPolicy>
       <minResources>4096 mb,4 vcores</minResources>
       <maxResources>32768 mb,16 vcores</maxResources>
@@ -13,7 +13,7 @@
       <allowPreemptionFrom>true</allowPreemptionFrom>
     </queue>
     <queue name="development">
-      <weight>2</weight>
+      <weight>2.0</weight>
       <schedulingPolicy>fair</schedulingPolicy>
       <minResources>1024 mb,1 vcores</minResources>
       <maxResources>8192 mb,4 vcores</maxResources>
@@ -22,7 +22,7 @@
       <allowPreemptionFrom>false</allowPreemptionFrom>
     </queue>
     <queue name="default">
-      <weight>1</weight>
+      <weight>1.0</weight>
       <schedulingPolicy>fair</schedulingPolicy>
       <minResources>1024 mb,1 vcores</minResources>
       <maxResources>8192 mb,4 vcores</maxResources>

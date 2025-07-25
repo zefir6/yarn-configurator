@@ -114,7 +114,7 @@ export async function parseQueuesFromXML(content: string): Promise<any[]> {
         const queue: any = {
           name: queueName,
           parent: parentName,
-          weight: parseFloat(queueXml.weight) || 1.0,
+          weight: queueXml.weight ? parseFloat(queueXml.weight) : 1.0,
           schedulingPolicy: queueXml.schedulingPolicy || "fair"
         };
 
@@ -204,7 +204,9 @@ export function generateXMLFromQueues(queues: any[], globalConfig?: any): string
     // Add queue properties (but skip them for root queue to keep it clean)
     if (queue.name !== 'root') {
       if (queue.weight !== null && queue.weight !== undefined) {
-        queueXml += `${indent}  <weight>${queue.weight}</weight>\n`;
+        // Format weight to preserve decimal notation (e.g., 4.0 instead of 4)
+        const formattedWeight = Number.isInteger(queue.weight) ? `${queue.weight}.0` : queue.weight;
+        queueXml += `${indent}  <weight>${formattedWeight}</weight>\n`;
       }
       
       if (queue.schedulingPolicy) {
@@ -232,7 +234,9 @@ export function generateXMLFromQueues(queues: any[], globalConfig?: any): string
       }
       
       if (queue.maxAMShare) {
-        queueXml += `${indent}  <maxAMShare>${queue.maxAMShare}</maxAMShare>\n`;
+        // Preserve decimal formatting for maxAMShare
+        const formattedShare = Number.isInteger(queue.maxAMShare) ? `${queue.maxAMShare}.0` : queue.maxAMShare;
+        queueXml += `${indent}  <maxAMShare>${formattedShare}</maxAMShare>\n`;
       }
       
       // Preemption settings (always include explicit value for allowPreemptionFrom)
@@ -258,7 +262,9 @@ export function generateXMLFromQueues(queues: any[], globalConfig?: any): string
     } else {
       // For root queue, add properties
       if (queue.weight && queue.weight !== 1) {
-        queueXml += `${indent}  <weight>${queue.weight}</weight>\n`;
+        // Format weight to preserve decimal notation (e.g., 4.0 instead of 4)
+        const formattedWeight = Number.isInteger(queue.weight) ? `${queue.weight}.0` : queue.weight;
+        queueXml += `${indent}  <weight>${formattedWeight}</weight>\n`;
       }
       if (queue.schedulingPolicy) {
         queueXml += `${indent}  <schedulingPolicy>${queue.schedulingPolicy}</schedulingPolicy>\n`;
