@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { formatEuropeanDateTime } from "@/lib/date-utils";
 import { 
   Settings, 
   Upload, 
@@ -216,7 +217,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             {(config as any)?.filePath || "/etc/hadoop/conf/fair-scheduler.xml"}
           </p>
           <p className="text-xs text-carbon-gray-50 mt-1">
-            {(config as any)?.lastModified ? `Last modified: ${new Date((config as any).lastModified).toLocaleString()}` : "No modification date"}
+            {(config as any)?.lastModified ? `Last modified: ${formatEuropeanDateTime((config as any).lastModified)}` : "No modification date"}
           </p>
         </div>
 

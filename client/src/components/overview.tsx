@@ -15,6 +15,7 @@ import {
   Plus,
   Eye
 } from "lucide-react";
+import { formatEuropeanDateTime } from "@/lib/date-utils";
 import type { Queue } from "@shared/schema";
 
 interface OverviewProps {
@@ -30,7 +31,12 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
     queryKey: ["/api/queues"],
   });
 
-  const { data: config } = useQuery({
+  const { data: config } = useQuery<{
+    id: number;
+    filePath: string;
+    lastModified?: string;
+    isValid: boolean;
+  }>({
     queryKey: ["/api/config"],
   });
 
@@ -167,7 +173,7 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
             <div>
               <h4 className="font-medium text-carbon-gray-70 mb-2">Last Modified</h4>
               <p className="text-sm text-carbon-gray-50">
-                {config?.lastModified ? new Date(config.lastModified).toLocaleString() : "Unknown"}
+                {config?.lastModified ? formatEuropeanDateTime(config.lastModified) : "Unknown"}
               </p>
             </div>
           </div>
@@ -187,7 +193,7 @@ export default function Overview({ onEditQueue, onSwitchToQueues }: OverviewProp
             <div className="flex items-center justify-between">
               <span className="text-sm text-carbon-gray-70">Configuration loaded from disk</span>
               <span className="text-xs text-carbon-gray-50">
-                {config?.lastModified ? new Date(config.lastModified).toLocaleString() : "Recently"}
+                {config?.lastModified ? formatEuropeanDateTime(config.lastModified) : "Recently"}
               </span>
             </div>
             <div className="flex items-center justify-between">

@@ -7,6 +7,7 @@ This is a full-stack web application for managing YARN Fair Scheduler configurat
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Date and time format: European (ISO) standards - 24-hour format and DD-MM-YYYY dates.
 
 ## System Architecture
 
@@ -137,5 +138,6 @@ The application follows a monorepo structure with clear separation of concerns:
 - **New YARN Metrics dashboard**: Added comprehensive UI for configuring YARN connection and viewing live cluster data
 - **Fixed file modification timestamps**: Application now shows actual XML file modification time instead of application startup time
 - **Enhanced decimal input validation**: Form fields now properly handle decimal input with custom validation patterns
+- **Updated to European date/time standards**: Application now displays dates in DD-MM-YYYY format and uses 24-hour time throughout the interface
 
 The application is designed to be deployed locally with comprehensive deployment instructions provided in README.md. It supports both in-memory storage for development and PostgreSQL for production use. The application includes full documentation for local deployment, Docker deployment, system service setup, and Hadoop integration.
