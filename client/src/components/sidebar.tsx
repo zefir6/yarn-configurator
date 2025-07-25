@@ -16,10 +16,11 @@ import {
   Code, 
   CheckSquare,
   Save,
-  Eye
+  Eye,
+  Activity
 } from "lucide-react";
 
-type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation" | "global-settings";
+type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation" | "global-settings" | "yarn-metrics";
 
 interface SidebarProps {
   activeTab: TabType;
@@ -182,6 +183,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: "overview", icon: BarChart3, label: "Overview" },
     { id: "queues", icon: Network, label: "Queue Configuration" },
     { id: "global-settings", icon: Settings, label: "Global Settings" },
+    { id: "yarn-metrics", icon: Activity, label: "YARN Metrics" },
     { id: "policies", icon: Scale, label: "Scheduling Policies" },
     { id: "xml-editor", icon: Code, label: "XML Editor" },
     { id: "validation", icon: CheckSquare, label: "Validation & Preview" },

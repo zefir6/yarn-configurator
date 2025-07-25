@@ -4,9 +4,12 @@ import Overview from "@/components/overview";
 import QueueForm from "@/components/queue-form";
 import XmlEditor from "@/components/xml-editor";
 import GlobalSettings from "@/components/global-settings";
+import { YarnSettings } from "@/components/yarn-settings";
+import { ClusterMetrics } from "@/components/cluster-metrics";
+import { QueueMetrics } from "@/components/queue-metrics";
 import { CheckCircle, HelpCircle } from "lucide-react";
 
-type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation" | "global-settings";
+type TabType = "overview" | "queues" | "policies" | "xml-editor" | "validation" | "global-settings" | "yarn-metrics";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -19,7 +22,8 @@ export default function Dashboard() {
       'policies': 'Scheduling Policies',
       'xml-editor': 'XML Editor',
       'validation': 'Validation & Preview',
-      'global-settings': 'Global Settings'
+      'global-settings': 'Global Settings',
+      'yarn-metrics': 'YARN Metrics'
     };
     return titles[tab];
   };
@@ -53,6 +57,14 @@ export default function Dashboard() {
         return <XmlEditor />;
       case "global-settings":
         return <GlobalSettings />;
+      case "yarn-metrics":
+        return (
+          <div className="space-y-6">
+            <YarnSettings />
+            <ClusterMetrics />
+            <QueueMetrics />
+          </div>
+        );
       default:
         return <Overview onEditQueue={handleEditQueue} onSwitchToQueues={handleSwitchToQueues} />;
     }

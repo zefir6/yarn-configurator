@@ -1,12 +1,13 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { queueFormSchema, insertConfigFileSchema } from "@shared/schema";
+import { queueFormSchema, insertConfigFileSchema, yarnConnectionSchema } from "@shared/schema";
 import { z } from "zod";
 import multer, { FileFilterCallback } from "multer";
 import * as path from "path";
 import { parseString, Builder } from "xml2js";
 import { parseQueuesFromXML, generateXMLFromQueues } from "./xml-utils";
+import { YarnResourceManagerClient } from "./yarn-client";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -342,8 +343,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedConfig = await storage.updateGlobalConfig(validatedData);
       res.json(updatedConfig);
     } catch (error) {
-      console.error("Failed to update global config:", error);
+      console.error("Global config update error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid global configuration data", errors: error.errors });
+      }
       res.status(500).json({ message: "Failed to update global configuration" });
+    }
+  });
+
+  // YARN Resource Manager Integration Routes
+  
+  // Get YARN connection settings
+  app.get("/api/yarn/connection", async (req, res) => {
+    try {
+      const connection = await storage.getYarnConnection();
+      res.json(connection);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get YARN connection settings" });
+    }
+  });
+
+  // Update YARN connection settings
+  app.put("/api/yarn/connection", async (req, res) => {
+    try {
+      const validatedData = yarnConnectionSchema.parse(req.body);
+      const updatedConnection = await storage.updateYarnConnection(validatedData);
+      res.json(updatedConnection);
+    } catch (error) {
+      console.error("YARN connection update error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid YARN connection data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update YARN connection settings" });
+    }
+  });
+
+  // Test YARN connection
+  app.get("/api/yarn/test-connection", async (req, res) => {
+    try {
+      const connection = await storage.getYarnConnection();
+      const client = new YarnResourceManagerClient(connection);
+      const isConnected = await client.isConnected();
+      res.json({ connected: isConnected });
+    } catch (error) {
+      console.error("YARN connection test error:", error);
+      res.json({ connected: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Get cluster metrics
+  app.get("/api/yarn/cluster-metrics", async (req, res) => {
+    try {
+      const connection = await storage.getYarnConnection();
+      const client = new YarnResourceManagerClient(connection);
+      const metrics = await client.getClusterMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("Cluster metrics error:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch cluster metrics",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get queue metrics
+  app.get("/api/yarn/queue-metrics", async (req, res) => {
+    try {
+      const connection = await storage.getYarnConnection();
+      const client = new YarnResourceManagerClient(connection);
+      const queueName = req.query.queue as string;
+      const metrics = await client.getQueueMetrics(queueName);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Queue metrics error:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch queue metrics",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get applications by queue
+  app.get("/api/yarn/applications", async (req, res) => {
+    try {
+      const connection = await storage.getYarnConnection();
+      const client = new YarnResourceManagerClient(connection);
+      const queueName = req.query.queue as string;
+      
+      if (!queueName) {
+        return res.status(400).json({ message: "Queue name is required" });
+      }
+      
+      const applications = await client.getApplicationsByQueue(queueName);
+      res.json(applications);
+    } catch (error) {
+      console.error("Applications fetch error:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch applications",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

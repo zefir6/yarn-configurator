@@ -56,6 +56,57 @@ export const insertGlobalConfigSchema = createInsertSchema(globalConfig).omit({
   id: true,
 });
 
+// YARN Resource Manager integration schemas
+export const clusterMetricsSchema = z.object({
+  totalMB: z.number(),
+  availableMB: z.number(),
+  allocatedMB: z.number(),
+  totalVirtualCores: z.number(),
+  availableVirtualCores: z.number(),
+  appsRunning: z.number(),
+  appsPending: z.number(),
+  containersReserved: z.number(),
+  totalNodes: z.number(),
+});
+
+export const queueMetricsSchema: z.ZodType<{
+  queueName: string;
+  capacity: number;
+  usedCapacity: number;
+  maxCapacity: number;
+  absoluteCapacity?: number;
+  absoluteUsedCapacity?: number;
+  numApplications: number;
+  resourcesUsed: {
+    memory: number;
+    vCores: number;
+  };
+  queues?: {
+    queue: any[];
+  };
+}> = z.object({
+  queueName: z.string(),
+  capacity: z.number(),
+  usedCapacity: z.number(),
+  maxCapacity: z.number(),
+  absoluteCapacity: z.number().optional(),
+  absoluteUsedCapacity: z.number().optional(),
+  numApplications: z.number(),
+  resourcesUsed: z.object({
+    memory: z.number(),
+    vCores: z.number(),
+  }),
+  queues: z.object({
+    queue: z.array(z.lazy(() => queueMetricsSchema)),
+  }).optional(),
+});
+
+export const yarnConnectionSchema = z.object({
+  resourceManagerHost: z.string().min(1, "Resource Manager host is required"),
+  resourceManagerPort: z.number().min(1).max(65535).default(8088),
+  enabled: z.boolean().default(false),
+});
+
 // Types
 export type Queue = typeof queues.$inferSelect;
 export type InsertQueue = z.infer<typeof insertQueueSchema>;
@@ -63,6 +114,9 @@ export type ConfigFile = typeof configFiles.$inferSelect;
 export type InsertConfigFile = z.infer<typeof insertConfigFileSchema>;
 export type GlobalConfig = typeof globalConfig.$inferSelect;
 export type InsertGlobalConfig = z.infer<typeof insertGlobalConfigSchema>;
+export type ClusterMetrics = z.infer<typeof clusterMetricsSchema>;
+export type QueueMetrics = z.infer<typeof queueMetricsSchema>;
+export type YarnConnection = z.infer<typeof yarnConnectionSchema>;
 
 // Extended schemas for forms
 export const queueFormSchema = insertQueueSchema.extend({

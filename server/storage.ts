@@ -1,4 +1,4 @@
-import { type Queue, type InsertQueue, type ConfigFile, type InsertConfigFile, type GlobalConfig, type InsertGlobalConfig } from "@shared/schema";
+import { type Queue, type InsertQueue, type ConfigFile, type InsertConfigFile, type GlobalConfig, type InsertGlobalConfig, type YarnConnection } from "@shared/schema";
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -28,6 +28,10 @@ export interface IStorage {
   hasPendingChanges(): Promise<boolean>;
   applyPendingChanges(): Promise<void>;
   discardPendingChanges(): Promise<void>;
+
+  // YARN integration operations
+  getYarnConnection(): Promise<YarnConnection>;
+  updateYarnConnection(connection: Partial<YarnConnection>): Promise<YarnConnection>;
 }
 
 export class MemStorage implements IStorage {
@@ -39,6 +43,7 @@ export class MemStorage implements IStorage {
   private defaultConfigPath: string;
   private pendingChanges: Set<number>;
   private lastSyncedState: Map<number, Queue>;
+  private yarnConnection: YarnConnection;
 
   constructor() {
     this.queues = new Map();
@@ -57,6 +62,11 @@ export class MemStorage implements IStorage {
     this.defaultConfigPath = process.env.FAIR_SCHEDULER_XML_PATH || './data/fair-scheduler.xml';
     this.pendingChanges = new Set();
     this.lastSyncedState = new Map();
+    this.yarnConnection = {
+      resourceManagerHost: process.env.YARN_RM_HOST || 'localhost',
+      resourceManagerPort: parseInt(process.env.YARN_RM_PORT || '8088'),
+      enabled: process.env.YARN_ENABLED === 'true' || false,
+    };
     
     // Try to load existing config from disk first, then initialize
     this.loadConfigFromDisk();
@@ -441,6 +451,15 @@ export class MemStorage implements IStorage {
     // Clear pending changes
     this.pendingChanges.clear();
     console.log('Discarded all pending changes');
+  }
+
+  async getYarnConnection(): Promise<YarnConnection> {
+    return { ...this.yarnConnection };
+  }
+
+  async updateYarnConnection(connection: Partial<YarnConnection>): Promise<YarnConnection> {
+    this.yarnConnection = { ...this.yarnConnection, ...connection };
+    return { ...this.yarnConnection };
   }
 
   async reloadFromDisk(): Promise<void> {

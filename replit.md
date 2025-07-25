@@ -122,6 +122,10 @@ The application follows a monorepo structure with clear separation of concerns:
 - File upload/download capabilities with bidirectional XML synchronization
 - Real-time form validation and error handling
 - Global configuration management with queue placement policy attributes
+- **YARN Resource Manager integration** for live cluster metrics and queue utilization
+- **Real-time monitoring dashboard** showing cluster capacity, memory usage, CPU utilization, and running applications
+- **Queue-specific metrics** displaying utilization percentages, resource consumption, and application counts
+- **Connection management** with test connectivity and configurable Resource Manager endpoints
 - Responsive design with mobile support
 
 ### Recent Changes (July 25, 2025)
@@ -129,5 +133,9 @@ The application follows a monorepo structure with clear separation of concerns:
 - **Enhanced queue placement policy support**: Preserves create="false" attributes in queuePlacementPolicy rules during XML round-trip
 - **Decimal formatting preservation**: Fixed issue where numeric values like "4.0" were being converted to "4", ensuring YARN Resource Manager compatibility
 - **Removed duplicate generateXMLFromQueues function**: Eliminated function shadowing that was preventing global configuration from being used in XML generation
+- **Added YARN Resource Manager integration**: Implemented real-time cluster metrics and queue utilization monitoring
+- **New YARN Metrics dashboard**: Added comprehensive UI for configuring YARN connection and viewing live cluster data
+- **Fixed file modification timestamps**: Application now shows actual XML file modification time instead of application startup time
+- **Enhanced decimal input validation**: Form fields now properly handle decimal input with custom validation patterns
 
 The application is designed to be deployed locally with comprehensive deployment instructions provided in README.md. It supports both in-memory storage for development and PostgreSQL for production use. The application includes full documentation for local deployment, Docker deployment, system service setup, and Hadoop integration.
